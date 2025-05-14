@@ -33,6 +33,8 @@ int main(int argc, char* argv[]) {
     bool running = true;
     SDL_Event event;
 
+    SDL_Rect knopka1 {100, 100, 200, 200};
+
     while (running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {running = false;}}
