@@ -43,7 +43,6 @@ int main(int argc, char* argv[]) {
         /* Фон */
         SDL_SetRenderDrawColor(renderer, 123, 123, 123, 255); SDL_RenderClear(renderer);
 
-        // тут можно рисовать
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16); // ~60 FPS
