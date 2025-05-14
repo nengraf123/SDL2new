@@ -63,7 +63,6 @@ int main(int argc, char* argv[]) {
         bool MouseOnKnopka1 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
 
 
-
         /* Рисуем кнопку 1: цвет зависит от наведения */
         if (MouseOnKnopka1) SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);
         else          SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
