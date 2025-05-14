@@ -40,8 +40,8 @@ int main(int argc, char* argv[]) {
         if (keyState[SDL_SCANCODE_ESCAPE]) running = false;
 
 
-        SDL_SetRenderDrawColor(renderer, 123, 123, 123, 255); // тёмно-серый фон
-        SDL_RenderClear(renderer);
+        /* Фон */
+        SDL_SetRenderDrawColor(renderer, 123, 123, 123, 255); SDL_RenderClear(renderer);
 
         // тут можно рисовать
 
