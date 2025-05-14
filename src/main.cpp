@@ -60,12 +60,12 @@ int main(int argc, char* argv[]) {
 
 
         /* Проверяем пересечение */
-        bool hovering = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
+        bool MouseOnKnopka1 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
 
 
 
         /* Рисуем кнопку 1: цвет зависит от наведения */
-        if (hovering) SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);
+        if (MouseOnKnopka1) SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);
         else          SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         SDL_RenderFillRect(renderer, &knopka1);
         /* Черная обводка вокруг кнопки */
