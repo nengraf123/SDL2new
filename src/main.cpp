@@ -66,6 +66,11 @@ int main(int argc, char* argv[]) {
 
         /* Проверяем пересечение */
         bool MouseOnKnopka1 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
+        bool MouseOnKnopka2 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
+        bool MouseOnKnopka3 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
+        bool MouseOnKnopka4 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
+        bool MouseOnKnopka5 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
+        bool MouseOnKnopka6 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
 
 
         /* Рисуем кнопку 1: цвет зависит от наведения */
