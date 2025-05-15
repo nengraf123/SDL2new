@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <functional>
+#include <SDL2/SDL_mixer.h>
 
 
 
@@ -34,6 +35,24 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return 1;
     }
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+        printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
+        return 1;
+    }
+    // Частота 44.1 кГц, формат по умолчанию, 2 канала (стерео), буфер 2048 байт
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        printf("SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
+        return 1;
+    }
+    Mix_Music* bgm = Mix_LoadMUS("muzika.mp3");
+    if (!bgm) {
+        printf("Failed to load bgm! SDL_mixer Error: %s\n", Mix_GetError());
+        return 1;
+    }
+
+
+
+    
 
 
     /* Наши кнопки */
@@ -56,8 +75,7 @@ int main(int argc, char* argv[]) {
 
     SDL_Event event;
     bool running = true;
-    while (running) {
-        while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}}
+    while (running) {while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}}
 
         
         // Обновляем позицию «курсорного» прямоугольника
@@ -124,9 +142,8 @@ int main(int argc, char* argv[]) {
             SDL_RenderFillRect(renderer, &knopka5);
             /* Черная обводка вокруг кнопки */
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka5);
-        }
-        if (scene == 1)
-        {
+
+
             /* Рисуем кнопку 6: цвет зависит от наведения */
             if (MouseOnKnopka6) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
             SDL_RenderFillRect(renderer, &knopka6);
@@ -163,10 +180,9 @@ int main(int argc, char* argv[]) {
         }
 
             /* Проверка нажатия на кнопочки (пока что хуево работает слишком много кликов) */
-            if(event.type == SDL_MOUSEBUTTONDOWN){if(MouseOnKnopka1 && event.button.button == SDL_BUTTON_LEFT){scene =1; std::cout << "1\n";}}  
-            if(event.type == SDL_MOUSEBUTTONDOWN){if(MouseOnKnopka10 && event.button.button == SDL_BUTTON_LEFT){scene =0; std::cout << "0\n";}}
+            if(scene==0){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka1 && event.button.button == SDL_BUTTON_LEFT){scene =1; std::cout << "1\n";}}}  
+            if(scene==1){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka10  && event.button.button == SDL_BUTTON_LEFT){scene =0; std::cout << "0\n";}}}
             
-                    // Обработка нажатия кнопки мыши
 
 
 
