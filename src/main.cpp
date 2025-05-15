@@ -51,6 +51,9 @@ int main(int argc, char* argv[]) {
     /* Невидимый прямоугольник-курсора */
     SDL_Rect KvadratNaCursore = {0, 0, 2, 2};
 
+    /* Переменная сцены */
+    int scene =1;
+
     while (running) {
         while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}}
 
@@ -60,6 +63,7 @@ int main(int argc, char* argv[]) {
         SDL_GetMouseState(&mx, &my);
         KvadratNaCursore.x = mx - KvadratNaCursore.w / 2;
         KvadratNaCursore.y = my - KvadratNaCursore.h / 2;
+
         /* Хуйня для Клавиатуры */
         const Uint8 *keyState = SDL_GetKeyboardState(NULL);
         /* Фон */
@@ -82,75 +86,77 @@ int main(int argc, char* argv[]) {
 
 
         /* Механика кнопочек */
-        /* Рисуем кнопку 1: цвет зависит от наведения */
-        if (MouseOnKnopka1) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka1);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka1);
+        if (scene == 1)
+        {
+            /* Рисуем кнопку 1: цвет зависит от наведения */
+            if (MouseOnKnopka1) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka1);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka1);
 
 
-        /* Рисуем кнопку 2: цвет зависит от наведения */
-        if (MouseOnKnopka2) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka2);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka2);
+            /* Рисуем кнопку 2: цвет зависит от наведения */
+            if (MouseOnKnopka2) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka2);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka2);
 
 
-        /* Рисуем кнопку 3: цвет зависит от наведения */
-        if (MouseOnKnopka3) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka3);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka3);
+            /* Рисуем кнопку 3: цвет зависит от наведения */
+            if (MouseOnKnopka3) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka3);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka3);
 
 
-        /* Рисуем кнопку 4: цвет зависит от наведения */
-        if (MouseOnKnopka4) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka4);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka4);
+            /* Рисуем кнопку 4: цвет зависит от наведения */
+            if (MouseOnKnopka4) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka4);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka4);
 
 
-        /* Рисуем кнопку 5: цвет зависит от наведения */
-        if (MouseOnKnopka5) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka5);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka5);
+            /* Рисуем кнопку 5: цвет зависит от наведения */
+            if (MouseOnKnopka5) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka5);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka5);
 
 
-        /* Рисуем кнопку 6: цвет зависит от наведения */
-        if (MouseOnKnopka6) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka6);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka6);
+            /* Рисуем кнопку 6: цвет зависит от наведения */
+            if (MouseOnKnopka6) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka6);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka6);
 
 
-        /* Рисуем кнопку 7: цвет зависит от наведения */
-        if (MouseOnKnopka7) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka7);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka7);
+            /* Рисуем кнопку 7: цвет зависит от наведения */
+            if (MouseOnKnopka7) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka7);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka7);
 
 
-        /* Рисуем кнопку 8: цвет зависит от наведения */
-        if (MouseOnKnopka8) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka8);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka8);
+            /* Рисуем кнопку 8: цвет зависит от наведения */
+            if (MouseOnKnopka8) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka8);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka8);
 
 
-        /* Рисуем кнопку 9: цвет зависит от наведения */
-        if (MouseOnKnopka9) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka9);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka9);
+            /* Рисуем кнопку 9: цвет зависит от наведения */
+            if (MouseOnKnopka9) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka9);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka9);
 
 
-        /* Рисуем кнопку 10: цвет зависит от наведения */
-        if (MouseOnKnopka10) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka10);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka10);
-
+            /* Рисуем кнопку 10: цвет зависит от наведения */
+            if (MouseOnKnopka10) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
+            SDL_RenderFillRect(renderer, &knopka10);
+            /* Черная обводка вокруг кнопки */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka10);
+        }
 
 
 
