@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_scancode.h>
 #include <iostream>
 #include <vector>
@@ -81,17 +82,15 @@ int main(int argc, char* argv[]) {
     bool running = true;
     while (running) {
         while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}
-        // пример: пауза/возобновление музыки по клавише M
-        // if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_m) {music = true; if (Mix_PausedMusic()){ Mix_ResumeMusic();}else Mix_PauseMusic();}
-        if (event.type == SDL_KEYDOWN) {
+
+        /* Наши бинды кнопочек на клавиатуре */
+        if (event.type == SDL_KEYDOWN) // нужна для клавиатуры
+        {
             // при нажатии пробела
-            if (event.key.keysym.sym == SDLK_SPACE) {
-                if (!musicStarted) {if (Mix_PlayMusic(bgm, -1) == -1) {std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;}
-                    else {musicStarted = true;}
-                }
-            }
-            // для паузы/продолжения можно, например, M:
-            else if (event.key.keysym.sym == SDLK_m) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();}
+            if (event.key.keysym.sym == SDLK_1) {if(!musicStarted){if(Mix_PlayMusic(bgm, -1) == -1) {std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;}
+                else {musicStarted = true;}}}
+            // для паузы/продолжения можно, например, Space:
+            if (event.key.keysym.sym == SDLK_SPACE) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();}
         }
         }
 
