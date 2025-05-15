@@ -46,7 +46,6 @@ int main(int argc, char* argv[]) {
     SDL_Rect knopka8 {0, 525, 200, 75};
     SDL_Rect knopka9 {0, 600, 200, 75};
     SDL_Rect knopka10 {0, 675, 200, 75};
-    SDL_Rect knopka11 {0, 750, 200, 75};
 
     /* Невидимый прямоугольник-курсора */
     SDL_Rect KvadratNaCursore = {0, 0, 2, 2};
@@ -79,7 +78,6 @@ int main(int argc, char* argv[]) {
         bool MouseOnKnopka8 = SDL_HasIntersection(&KvadratNaCursore, &knopka8);
         bool MouseOnKnopka9 = SDL_HasIntersection(&KvadratNaCursore, &knopka9);
         bool MouseOnKnopka10 = SDL_HasIntersection(&KvadratNaCursore, &knopka10);
-        bool MouseOnKnopka11 = SDL_HasIntersection(&KvadratNaCursore, &knopka11);
 
 
         /* Рисуем кнопку 1: цвет зависит от наведения */
@@ -152,11 +150,6 @@ int main(int argc, char* argv[]) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka10);
 
 
-        /* Рисуем кнопку 11: цвет зависит от наведения */
-        if (MouseOnKnopka11) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
-        SDL_RenderFillRect(renderer, &knopka11);
-        /* Черная обводка вокруг кнопки */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka11);
 
 
         /* Mожно отрисовать курсорный прямоугольник для отладки */
