@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_scancode.h>
 #include <iostream>
 #include <vector>
 #include <functional>
@@ -82,18 +83,16 @@ int main(int argc, char* argv[]) {
         while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}
         // пример: пауза/возобновление музыки по клавише M
         // if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_m) {music = true; if (Mix_PausedMusic()){ Mix_ResumeMusic();}else Mix_PauseMusic();}
-        else if (event.type == SDL_KEYDOWN) {
+        if (event.type == SDL_KEYDOWN) {
             // при нажатии пробела
             if (event.key.keysym.sym == SDLK_SPACE) {
-                if (!musicStarted) {
-                    if (Mix_PlayMusic(bgm, -1) == -1) {
-                        std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
-                    } else {
-                        musicStarted = true;
-                    }
+                if (!musicStarted) {if (Mix_PlayMusic(bgm, -1) == -1) {std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;}
+                    else {musicStarted = true;}
                 }
             }
-
+            // для паузы/продолжения можно, например, M:
+            else if (event.key.keysym.sym == SDLK_m) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();}
+        }
         }
 
         
@@ -108,7 +107,8 @@ int main(int argc, char* argv[]) {
         /* Фон */
         SDL_SetRenderDrawColor(renderer, 123, 123, 123, 255); SDL_RenderClear(renderer);
         /* Выход на Esc */
-        if (keyState[SDL_SCANCODE_ESCAPE]) running = false;
+        if (keyState[SDL_SCANCODE_ESCAPE]){running = false;}
+        if (keyState[SDL_SCANCODE_SPACE]){}
 
         
         /* Проверяем пересечение */
