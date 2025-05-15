@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
         bool MouseOnKnopka9 = SDL_HasIntersection(&KvadratNaCursore, &knopka9);
         bool MouseOnKnopka10 = SDL_HasIntersection(&KvadratNaCursore, &knopka10);
 
-
+        /* Механика кнопочек */
         /* Рисуем кнопку 1: цвет зависит от наведения */
         if (MouseOnKnopka1) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
         SDL_RenderFillRect(renderer, &knopka1);
