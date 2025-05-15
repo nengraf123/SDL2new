@@ -204,15 +204,9 @@ int main(int argc, char* argv[]) {
             if (event.key.keysym.sym == SDLK_SPACE) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();}
 
         }  
-        // Левая кнопка мыши нажата 
-        if (scene==0 && MouseOnKnopka1 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-            scene =1;
-            std::cout << "1\n";
-        }
-        if (scene==1 && MouseOnKnopka10 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-            scene =0;
-            std::cout << "0\n";
-        }
+        /* Бинды кнопочек для мышки */
+        if (scene==0 && MouseOnKnopka1 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {scene =1;}
+        if (scene==0 && MouseOnKnopka10 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {scene =0;}
 
 
         }
@@ -220,7 +214,7 @@ int main(int argc, char* argv[]) {
 
 
 
-        SDL_RenderPresent(renderer);SDL_Delay(16); /* 60 FPS */}
+        SDL_RenderPresent(renderer);SDL_Delay(16); /* ~60 FPS */}
     //Ероры
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
