@@ -4,6 +4,7 @@
 
 
 int main(int argc, char* argv[]) {
+    // Проверки усякие
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::cerr << "Ошибка инициализации SDL: " << SDL_GetError() << std::endl;
         return 1;
@@ -78,6 +79,7 @@ int main(int argc, char* argv[]) {
         bool MouseOnKnopka8 = SDL_HasIntersection(&KvadratNaCursore, &knopka8);
         bool MouseOnKnopka9 = SDL_HasIntersection(&KvadratNaCursore, &knopka9);
         bool MouseOnKnopka10 = SDL_HasIntersection(&KvadratNaCursore, &knopka10);
+
 
         /* Механика кнопочек */
         /* Рисуем кнопку 1: цвет зависит от наведения */
