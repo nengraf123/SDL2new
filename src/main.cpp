@@ -55,8 +55,8 @@ int main(int argc, char* argv[]) {
     
 
     // Проигрывать bgm в бесконечном цикле: -1 = бесконечность
-    bool music = false;
-    if(music==true){if(Mix_PlayMusic(bgm, -1) == -1) {printf("Mix_PlayMusic: %s\n", Mix_GetError());}}
+    bool musicStarted = false;    // будет сигналом, что музыка уже запущена
+    // if(music==true){if(Mix_PlayMusic(bgm, -1) == -1) {printf("Mix_PlayMusic: %s\n", Mix_GetError());}}
 
     /* Наши кнопки */
     SDL_Rect knopka1 {0, 0, 200, 75};
@@ -81,8 +81,19 @@ int main(int argc, char* argv[]) {
     while (running) {
         while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}
         // пример: пауза/возобновление музыки по клавише M
-        if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_m) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();
-        }
+        // if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_m) {music = true; if (Mix_PausedMusic()){ Mix_ResumeMusic();}else Mix_PauseMusic();}
+        else if (event.type == SDL_KEYDOWN) {
+            // при нажатии пробела
+            if (event.key.keysym.sym == SDLK_SPACE) {
+                if (!musicStarted) {
+                    if (Mix_PlayMusic(bgm, -1) == -1) {
+                        std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+                    } else {
+                        musicStarted = true;
+                    }
+                }
+            }
+
         }
 
         
