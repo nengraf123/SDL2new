@@ -33,8 +33,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    bool running = true;
-    SDL_Event event;
 
     /* Наши кнопки */
     SDL_Rect knopka1 {0, 0, 200, 75};
@@ -54,6 +52,8 @@ int main(int argc, char* argv[]) {
     /* Переменная сцены */
     int scene =1;
 
+    SDL_Event event;
+    bool running = true;
     while (running) {
         while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}}
 
@@ -121,8 +121,9 @@ int main(int argc, char* argv[]) {
             SDL_RenderFillRect(renderer, &knopka5);
             /* Черная обводка вокруг кнопки */
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka5);
-
-
+        }
+        if (scene == 1)
+        {
             /* Рисуем кнопку 6: цвет зависит от наведения */
             if (MouseOnKnopka6) {SDL_SetRenderDrawColor(renderer, 170, 170, 255, 255);}else {SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);}
             SDL_RenderFillRect(renderer, &knopka6);
@@ -158,6 +159,8 @@ int main(int argc, char* argv[]) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka10);
         }
 
+        /* Проверка нажатия на кнопочки (пока что хуево работает слишком много кликов */
+        if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT && MouseOnKnopka1) {scene =2;}
 
 
         /* Mожно отрисовать курсорный прямоугольник для отладки */
