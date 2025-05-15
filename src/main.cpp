@@ -54,6 +54,9 @@ int main(int argc, char* argv[]) {
 
     
 
+    // Проигрывать bgm в бесконечном цикле: -1 = бесконечность
+    bool music = false;
+    if(music==true){if(Mix_PlayMusic(bgm, -1) == -1) {printf("Mix_PlayMusic: %s\n", Mix_GetError());}}
 
     /* Наши кнопки */
     SDL_Rect knopka1 {0, 0, 200, 75};
@@ -75,7 +78,12 @@ int main(int argc, char* argv[]) {
 
     SDL_Event event;
     bool running = true;
-    while (running) {while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}}
+    while (running) {
+        while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}
+        // пример: пауза/возобновление музыки по клавише M
+        if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_m) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();
+        }
+        }
 
         
         // Обновляем позицию «курсорного» прямоугольника
@@ -179,10 +187,10 @@ int main(int argc, char* argv[]) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka10);
         }
 
-            /* Проверка нажатия на кнопочки (пока что хуево работает слишком много кликов) */
-            if(scene==0){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka1 && event.button.button == SDL_BUTTON_LEFT){scene =1; std::cout << "1\n";}}}  
-            if(scene==1){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka10  && event.button.button == SDL_BUTTON_LEFT){scene =0; std::cout << "0\n";}}}
-            
+        /* Проверка нажатия на кнопочки (пока что хуево работает слишком много кликов) */
+        if(scene==0){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka1 && event.button.button == SDL_BUTTON_LEFT){scene =1; std::cout << "1\n";}}}  
+        if(scene==1){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka10  && event.button.button == SDL_BUTTON_LEFT){scene =0; std::cout << "0\n";}}}
+        
 
 
 
