@@ -1,24 +1,8 @@
 #include <SDL2/SDL.h>
 #include <iostream>
- #include <vector>
- #include <functional>
+#include <vector>
+#include <functional>
 
-
- // Структура «кнопка» с колбэком
- struct Button {
-     SDL_Rect rect;
-     std::function<void()> onClick;
- };
-
- // Функция проверки клика по набору кнопок
- void handleClicks(int mx, int my, const std::vector<Button>& buttons) {
-     for (auto& btn : buttons) {
-         if (mx >= btn.rect.x && mx <= btn.rect.x + btn.rect.w &&
-             my >= btn.rect.y && my <= btn.rect.y + btn.rect.h) {
-             btn.onClick();
-         }
-     }
- }
 
 
 int main(int argc, char* argv[]) {
@@ -178,9 +162,6 @@ int main(int argc, char* argv[]) {
         }
 
         /* Проверка нажатия на кнопочки (пока что хуево работает слишком много кликов */
-        if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT && MouseOnKnopka1) {scene =2;}
-        if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT && MouseOnKnopka2) {scene =1;}
-
 
         /* Mожно отрисовать курсорный прямоугольник для отладки */
         SDL_SetRenderDrawColor(renderer, 255,255,0,128);
@@ -193,107 +174,4 @@ int main(int argc, char* argv[]) {
     SDL_Quit();
     return 0;
 }
-
-// #include <SDL2/SDL.h>
-// #include <iostream>
-// #include <vector>
-// #include <functional>
-
-// // Структура «кнопка» с колбэком
-// struct Button {
-//     SDL_Rect rect;
-//     std::function<void()> onClick;
-// };
-
-// // Функция проверки клика по набору кнопок
-// void handleClicks(int mx, int my, const std::vector<Button>& buttons) {
-//     for (auto& btn : buttons) {
-//         if (mx >= btn.rect.x && mx <= btn.rect.x + btn.rect.w &&
-//             my >= btn.rect.y && my <= btn.rect.y + btn.rect.h) {
-//             btn.onClick();
-//         }
-//     }
-// }
-
-// int main(int argc, char* argv[]) {
-//     SDL_Init(SDL_INIT_VIDEO);
-//     SDL_Window* window = SDL_CreateWindow("Простой пример",
-//         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 750, 0);
-//     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
-
-//     bool running = true;
-//     SDL_Event event;
-
-//     int scene = 0;
-
-//     // Создаём набор кнопок для сцены 0
-//     std::vector<Button> menuButtons;
-//     for (int i = 0; i < 10; ++i) {
-//         menuButtons.push_back({
-//             SDL_Rect{0, i * 75, 200, 75},
-//             // колбэк для каждой кнопки
-//             [i, &scene](){
-//                 std::cout << "Нажата кнопка " << i+1 << " на сцене 0\n";
-//                 if (i == 0) scene = 1;  // например, первая переводит на сцену 1
-//             }
-//         });
-//     }
-
-//     // Набор кнопок для сцены 1
-//     std::vector<Button> scene1Buttons = {
-//         {{300,300,200,100}, [&scene](){
-//             std::cout << "Back from scene 1\n";
-//             scene = 0;
-//         }}
-//     };
-
-//     while (running) {
-//         while (SDL_PollEvent(&event)) {
-//             if (event.type == SDL_QUIT) running = false;
-
-//             // Обработка клика ВСЕГДА в одном месте
-//             if (event.type == SDL_MOUSEBUTTONUP &&
-//                 event.button.button == SDL_BUTTON_LEFT) {
-//                 int mx = event.button.x;
-//                 int my = event.button.y;
-//                 if (scene == 0) {
-//                     handleClicks(mx, my, menuButtons);
-//                 } else if (scene == 1) {
-//                     handleClicks(mx, my, scene1Buttons);
-//                 }
-//                 // ... можно добавить ещё else if для других сцен
-//             }
-//         }
-
-//         // Рисуем
-//         SDL_SetRenderDrawColor(renderer, 123,123,123,255);
-//         SDL_RenderClear(renderer);
-
-//         if (scene == 0) {
-//             // отрисовка кнопок меню
-//             for (auto& btn : menuButtons) {
-//                 SDL_SetRenderDrawColor(renderer, 200,0,100,255);
-//                 SDL_RenderFillRect(renderer, &btn.rect);
-//                 SDL_SetRenderDrawColor(renderer, 0,0,0,255);
-//                 SDL_RenderDrawRect(renderer, &btn.rect);
-//             }
-//         } else if (scene == 1) {
-//             // отрисовка кнопки «Назад»
-//             for (auto& btn : scene1Buttons) {
-//                 SDL_SetRenderDrawColor(renderer, 100,200,100,255);
-//                 SDL_RenderFillRect(renderer, &btn.rect);
-//                 SDL_SetRenderDrawColor(renderer, 0,0,0,255);
-//                 SDL_RenderDrawRect(renderer, &btn.rect);
-//             }
-//         }
-
-//         SDL_RenderPresent(renderer);
-//         SDL_Delay(16);
-//     }
-
-//     SDL_DestroyRenderer(renderer);
-//     SDL_DestroyWindow(window);
-//     SDL_Quit();
-//     return 0;
-// }
 
