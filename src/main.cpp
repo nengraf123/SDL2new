@@ -162,9 +162,9 @@ int main(int argc, char* argv[]) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka10);
         }
 
-            /* Проверка нажатия на кнопочки (пока что хуево работает слишком много кликов */
-            if(event.type == SDL_MOUSEBUTTONDOWN){if(MouseOnKnopka1){if (event.button.button == SDL_BUTTON_LEFT){scene =1; std::cout << "1\n";}}}  
-            if(event.type == SDL_MOUSEBUTTONDOWN){if(MouseOnKnopka1){if (event.button.button == SDL_BUTTON_LEFT){scene =0; std::cout << "0\n";}}}
+            /* Проверка нажатия на кнопочки (пока что хуево работает слишком много кликов) */
+            if(event.type == SDL_MOUSEBUTTONDOWN){if(MouseOnKnopka1 && event.button.button == SDL_BUTTON_LEFT){scene =1; std::cout << "1\n";}}  
+            if(event.type == SDL_MOUSEBUTTONDOWN){if(MouseOnKnopka10 && event.button.button == SDL_BUTTON_LEFT){scene =0; std::cout << "0\n";}}
             
                     // Обработка нажатия кнопки мыши
 
