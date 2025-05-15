@@ -86,11 +86,18 @@ int main(int argc, char* argv[]) {
         /* Наши бинды кнопочек на клавиатуре */
         if (event.type == SDL_KEYDOWN) // нужна для клавиатуры
         {
-            // при нажатии пробела
+            /* При нажатии 1 цифры начинает играть музыка */
             if (event.key.keysym.sym == SDLK_1) {if(!musicStarted){if(Mix_PlayMusic(bgm, -1) == -1) {std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;}
                 else {musicStarted = true;}}}
             // для паузы/продолжения можно, например, Space:
             if (event.key.keysym.sym == SDLK_SPACE) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();}
+
+            if (event.type == SDL_MOUSEBUTTONDOWN &&
+                event.button.button == SDL_BUTTON_LEFT) {
+                // Левая кнопка мыши нажата
+            }
+
+
         }
         }
 
