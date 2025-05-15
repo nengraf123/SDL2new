@@ -81,26 +81,10 @@ int main(int argc, char* argv[]) {
     SDL_Event event;
     bool running = true;
     while (running) {
-        while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}
 
-        /* Наши бинды кнопочек на клавиатуре */
-        if (event.type == SDL_KEYDOWN) // нужна для клавиатуры
-        {
-            /* При нажатии 1 цифры начинает играть музыка */
-            if (event.key.keysym.sym == SDLK_1) {if(!musicStarted){if(Mix_PlayMusic(bgm, -1) == -1) {std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;}
-                else {musicStarted = true;}}}
-            // для паузы/продолжения можно, например, Space:
-            if (event.key.keysym.sym == SDLK_SPACE) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();}
-
-            if (event.type == SDL_MOUSEBUTTONDOWN &&
-                event.button.button == SDL_BUTTON_LEFT) {
-                // Левая кнопка мыши нажата
-            }
-
-
-        }
-        }
-
+        /* Mожно отрисовать курсорный прямоугольник для отладки */
+        SDL_SetRenderDrawColor(renderer, 255,255,0,128);
+        SDL_RenderFillRect(renderer, &KvadratNaCursore);
         
         // Обновляем позицию «курсорного» прямоугольника
         int mx, my;
@@ -205,15 +189,36 @@ int main(int argc, char* argv[]) {
         }
 
         /* Проверка нажатия на кнопочки (пока что хуево работает слишком много кликов) */
-        if(scene==0){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka1 && event.button.button == SDL_BUTTON_LEFT){scene =1; std::cout << "1\n";}}}  
-        if(scene==1){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka10  && event.button.button == SDL_BUTTON_LEFT){scene =0; std::cout << "0\n";}}}
+        // if(scene==0){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka1 && event.button.button == SDL_BUTTON_LEFT){scene =1; std::cout << "1\n";}}}  
+        // if(scene==1){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka10  && event.button.button == SDL_BUTTON_LEFT){scene =0; std::cout << "0\n";}}}
         
+        while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}
+
+        /* Наши бинды кнопочек на клавиатуре */
+        if (event.type == SDL_KEYDOWN) // нужна для клавиатуры
+        {
+            /* При нажатии 1 цифры начинает играть музыка */
+            if (event.key.keysym.sym == SDLK_1) {if(!musicStarted){if(Mix_PlayMusic(bgm, -1) == -1) {std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;}
+                else {musicStarted = true;}}}
+            // для паузы/продолжения можно, например, Space:
+            if (event.key.keysym.sym == SDLK_SPACE) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();}
+
+        }  
+        // Левая кнопка мыши нажата 
+        if (scene==0 && MouseOnKnopka1 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            scene =1;
+            std::cout << "1\n";
+        }
+        if (scene==1 && MouseOnKnopka10 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            scene =0;
+            std::cout << "0\n";
+        }
+
+
+        }
 
 
 
-        /* Mожно отрисовать курсорный прямоугольник для отладки */
-        SDL_SetRenderDrawColor(renderer, 255,255,0,128);
-        SDL_RenderFillRect(renderer, &KvadratNaCursore);
 
         SDL_RenderPresent(renderer);SDL_Delay(16); /* 60 FPS */}
     //Ероры
