@@ -43,6 +43,11 @@ int main(int argc, char* argv[]) {
     SDL_Rect knopka5 {0, 300, 200, 75};
     SDL_Rect knopka6 {0, 375, 200, 75};
 
+    SDL_Rect knopka7 {0, 450, 200, 75};
+    SDL_Rect knopka8 {0, 525, 200, 75};
+    SDL_Rect knopka9 {0, 600, 200, 75};
+    SDL_Rect knopka10 {0, 675, 200, 75};
+    SDL_Rect knopka11 {0, 750, 200, 75};
 
     /* Невидимый прямоугольник-курсора */
     SDL_Rect KvadratNaCursore = {0, 0, 2, 2};
@@ -71,6 +76,10 @@ int main(int argc, char* argv[]) {
         bool MouseOnKnopka4 = SDL_HasIntersection(&KvadratNaCursore, &knopka4);
         bool MouseOnKnopka5 = SDL_HasIntersection(&KvadratNaCursore, &knopka5);
         bool MouseOnKnopka6 = SDL_HasIntersection(&KvadratNaCursore, &knopka6);
+        bool MouseOnKnopka7 = SDL_HasIntersection(&KvadratNaCursore, &knopka7);
+        bool MouseOnKnopka8 = SDL_HasIntersection(&KvadratNaCursore, &knopka8);
+        bool MouseOnKnopka9 = SDL_HasIntersection(&KvadratNaCursore, &knopka9);
+        bool MouseOnKnopka10 = SDL_HasIntersection(&KvadratNaCursore, &knopka10);
 
 
         /* Рисуем кнопку 1: цвет зависит от наведения */
