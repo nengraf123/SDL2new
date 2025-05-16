@@ -1,10 +1,12 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_scancode.h>
+#include <SDL2/SDL_surface.h>
 #include <iostream>
 #include <vector>
 #include <functional>
 #include <SDL2/SDL_mixer.h>
+#include <SDL2/SDL_image.h>
 
 
 
@@ -46,11 +48,42 @@ int main(int argc, char* argv[]) {
         printf("SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
         return 1;
     }
+
+    // Инициализируем SDL2 (видео+аудио)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+        std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+        return 1;
+    }
+
+    // Инициализируем SDL_image с поддержкой PNG
+    int imgFlags = IMG_INIT_PNG;
+    if (!(IMG_Init(imgFlags) & imgFlags)) {
+        std::cerr << "IMG_Init Error: " << IMG_GetError() << std::endl;
+        return 1;
+    }
+
     Mix_Music* bgm = Mix_LoadMUS("muzika.mp3");
     if (!bgm) {
         printf("Failed to load bgm! SDL_mixer Error: %s\n", Mix_GetError());
         return 1;
     }
+
+    // 4.1. Загружаем PNG в SDL_Surface
+    SDL_Surface* surface = IMG_Load("ZnakMuziki.png");
+    if (!surface) {
+        std::cerr << "IMG_Load Error: " << IMG_GetError() << std::endl;
+        // не забывай вызывать IMG_Quit и SDL_Quit перед return
+        return 1;
+    }
+
+    // 4.2. Преобразуем SDL_Surface в SDL_Texture
+    SDL_Texture* btnTexture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);  // больше не нужен
+    if (!btnTexture) {
+        std::cerr << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
+        return 1;
+    }
+
 
 
 
@@ -188,10 +221,6 @@ int main(int argc, char* argv[]) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka10);
         }
 
-        /* Проверка нажатия на кнопочки (пока что хуево работает слишком много кликов) */
-        // if(scene==0){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka1 && event.button.button == SDL_BUTTON_LEFT){scene =1; std::cout << "1\n";}}}  
-        // if(scene==1){if(event.type == SDL_MOUSEBUTTONDOWN) {if(MouseOnKnopka10  && event.button.button == SDL_BUTTON_LEFT){scene =0; std::cout << "0\n";}}}
-        
         while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}
 
         /* Наши бинды кнопочек на клавиатуре */
@@ -211,7 +240,7 @@ int main(int argc, char* argv[]) {
 
         }
 
-
+SDL_RenderCopy(renderer, btnTexture, nullptr, &knopka1);
 
 
         SDL_RenderPresent(renderer);SDL_Delay(16); /* ~60 FPS */}
