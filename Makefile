@@ -12,11 +12,15 @@
 
 CC = g++
 CFLAGS = -std=c++17 -I/usr/include -Iinclude
-LDFLAGS = -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
+LDFLAGS = -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lcurl
 
-all:
-	src/main.cpp src/tinyfiledialogs.c
+all: bin/app
+
+bin/app: src/main.cpp src/tinyfiledialogs.c
+	@mkdir -p bin
 	$(CC) $(CFLAGS) src/main.cpp src/tinyfiledialogs.c -o bin/app $(LDFLAGS)
 
 clean:
-	rm -f bin/app
+	@rm -rf bin
+
+.PHONY: all clean
