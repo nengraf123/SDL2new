@@ -270,9 +270,19 @@
 
 namespace fs = std::filesystem;
 
-// Функция для рендеринга текста
-SDL_Texture* createTextTexture(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, SDL_Color color) {
-    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), color);
+// Функция для рендеринга текста с обрезкой для квадратов
+SDL_Texture* createTextTexture(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, SDL_Color color, int maxWidth = -1) {
+    std::string displayText = text;
+    if (maxWidth > 0) {
+        if (TTF_SizeText(font, text.c_str(), nullptr, nullptr) > maxWidth) {
+            displayText = text;
+            while (TTF_SizeText(font, (displayText + "...").c_str(), nullptr, nullptr) > maxWidth && !displayText.empty()) {
+                displayText.pop_back();
+            }
+            displayText += "...";
+        }
+    }
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, displayText.c_str(), color);
     if (!textSurface) {
         std::cerr << "TTF_RenderText_Solid Error: " << TTF_GetError() << std::endl;
         return nullptr;
@@ -283,6 +293,16 @@ SDL_Texture* createTextTexture(SDL_Renderer* renderer, TTF_Font* font, const std
         std::cerr << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
     }
     return textTexture;
+}
+
+// Форматирование времени в MM:SS
+std::string formatTime(double seconds) {
+    int totalSeconds = static_cast<int>(seconds);
+    int minutes = totalSeconds / 60;
+    int secs = totalSeconds % 60;
+    char buffer[6];
+    snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, secs);
+    return std::string(buffer);
 }
 
 int main(int argc, char* argv[]) {
@@ -316,7 +336,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Загрузка шрифта
-    TTF_Font* font = TTF_OpenFont("arial.ttf", 16); // Укажи путь к шрифту (например, arial.ttf)
+    TTF_Font* font = TTF_OpenFont("arial.ttf", 20); // Увеличен шрифт
     if (!font) {
         std::cerr << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
         TTF_Quit();
@@ -379,7 +399,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Загрузка пути к музыке и папке из файла
+    // Загрузка пути к музыке и папке
     std::string musicPath = "muzika.mp3";
     std::string folderPath;
     std::ifstream musicPathFile("music_path.txt");
@@ -397,10 +417,14 @@ int main(int argc, char* argv[]) {
 
     // Список музыкальных файлов
     std::vector<std::string> musicFiles;
+    size_t currentTrackIndex = 0;
     if (!folderPath.empty() && fs::exists(folderPath)) {
         for (const auto& entry : fs::directory_iterator(folderPath)) {
             if (entry.path().extension() == ".mp3" || entry.path().extension() == ".wav") {
                 musicFiles.push_back(entry.path().string());
+                if (entry.path().string() == musicPath) {
+                    currentTrackIndex = musicFiles.size() - 1;
+                }
             }
         }
     }
@@ -416,24 +440,24 @@ int main(int argc, char* argv[]) {
     SDL_Rect knopka8 {0, 525, 200, 75};
     SDL_Rect knopka9 {0, 600, 200, 75};
     SDL_Rect knopka10 {0, 675, 200, 75};
-    SDL_Rect knopka11 {350, 650, 100, 75}; // Кнопка паузы
+    SDL_Rect knopka11 {340, 500, 120, 75}; // Кнопка паузы (выше)
 
-    // Ползунок перемотки (в центре)
+    // Ползунок перемотки (ниже)
     SDL_Rect sliderTrack {300, 600, 200, 10};
     SDL_Rect sliderHandle {300, 595, 10, 20};
     bool isDraggingSlider = false;
 
-    // Ползунок для прокрутки списка музыки
-    SDL_Rect musicScrollTrack {750, 50, 10, 400}; // Дорожка справа
-    SDL_Rect musicScrollHandle {750, 50, 10, 20}; // Ползунок
+    // Ползунок прокрутки музыки
+    SDL_Rect musicScrollTrack {790, 50, 10, 385};
+    SDL_Rect musicScrollHandle {790, 50, 10, 20};
     bool isDraggingMusicScroll = false;
-    int musicScrollOffset = 0; // Смещение списка файлов
-    const int maxVisibleSquares = 7; // Максимум видимых квадратов
+    int musicScrollOffset = 0;
+    const int maxVisibleSquares = 7;
 
-    // Квадраты для музыкальных файлов (справа)
+    // Квадраты для музыкальных файлов
     std::vector<SDL_Rect> musicSquares;
     for (size_t i = 0; i < musicFiles.size() && i < maxVisibleSquares; ++i) {
-        musicSquares.push_back({550, static_cast<int>(50 + i * 60), 150, 50});
+        musicSquares.push_back({650, static_cast<int>(50 + i * 55), 140, 50});
     }
 
     // Текстуры для названий файлов
@@ -441,13 +465,23 @@ int main(int argc, char* argv[]) {
     SDL_Color textColor = {255, 255, 255, 255};
     for (const auto& file : musicFiles) {
         std::string filename = fs::path(file).filename().string();
-        SDL_Texture* textTexture = createTextTexture(renderer, font, filename, textColor);
+        SDL_Texture* textTexture = createTextTexture(renderer, font, filename, textColor, 130);
         musicFileTextures.push_back(textTexture);
     }
 
     // Текст для кнопки паузы
     std::string currentTrack = fs::path(musicPath).filename().string();
     SDL_Texture* pauseButtonText = createTextTexture(renderer, font, currentTrack, textColor);
+    int textOffset = 0;
+    Uint32 lastTextUpdate = SDL_GetTicks();
+    bool needsScrolling = currentTrack.length() > 30;
+
+    // Текст для времени трека
+    SDL_Texture* currentTimeText = nullptr;
+    SDL_Texture* totalTimeText = nullptr;
+    double musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+    totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+    currentTimeText = createTextTexture(renderer, font, "00:00", textColor);
 
     SDL_Rect KvadratNaCursore = {0, 0, 2, 2};
     int scene = 0;
@@ -496,12 +530,31 @@ int main(int argc, char* argv[]) {
                 float progress = static_cast<float>(currentPosition) / musicDuration;
                 sliderHandle.x = sliderTrack.x + static_cast<int>(progress * (sliderTrack.w - sliderHandle.w));
             }
+            // Обновление текущего времени
+            if (currentTimeText) SDL_DestroyTexture(currentTimeText);
+            currentTimeText = createTextTexture(renderer, font, formatTime(currentPosition), textColor);
         }
 
         // Обновление позиции ползунка прокрутки
         if (!isDraggingMusicScroll && musicFiles.size() > maxVisibleSquares) {
             float progress = static_cast<float>(musicScrollOffset) / (musicFiles.size() - maxVisibleSquares);
             musicScrollHandle.y = musicScrollTrack.y + static_cast<int>(progress * (musicScrollTrack.h - musicScrollHandle.h));
+        }
+
+        // Анимация прокрутки текста
+        if (needsScrolling) {
+            Uint32 currentTime = SDL_GetTicks();
+            if (currentTime - lastTextUpdate >= 50) {
+                textOffset++;
+                int textW, textH;
+                SDL_QueryTexture(pauseButtonText, nullptr, nullptr, &textW, &textH);
+                if (textOffset >= textW - 110) {
+                    textOffset = 0; // Сброс для прокрутки вправо
+                }
+                lastTextUpdate = currentTime;
+            }
+        } else {
+            textOffset = 0;
         }
 
         // Отрисовка
@@ -537,8 +590,11 @@ int main(int argc, char* argv[]) {
                 if (i == 10 && pauseButtonText) {
                     int textW, textH;
                     SDL_QueryTexture(pauseButtonText, nullptr, nullptr, &textW, &textH);
-                    SDL_Rect textRect = {knopka->x + 5, knopka->y + (knopka->h - textH) / 2, textW, textH};
+                    SDL_Rect textRect = {knopka->x + 5 - textOffset, knopka->y + 5, std::min(textW, 110), textH};
+                    SDL_Rect clipRect = {knopka->x + 5, knopka->y + 5, 110, textH};
+                    SDL_RenderSetClipRect(renderer, &clipRect);
                     SDL_RenderCopy(renderer, pauseButtonText, nullptr, &textRect);
+                    SDL_RenderSetClipRect(renderer, nullptr);
                 }
             }
 
@@ -549,6 +605,20 @@ int main(int argc, char* argv[]) {
             SDL_RenderFillRect(renderer, &sliderHandle);
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderDrawRect(renderer, &sliderHandle);
+
+            // Отрисовка времени трека
+            if (currentTimeText) {
+                int textW, textH;
+                SDL_QueryTexture(currentTimeText, nullptr, nullptr, &textW, &textH);
+                SDL_Rect textRect = {sliderTrack.x - textW - 5, sliderTrack.y - textH / 2, textW, textH};
+                SDL_RenderCopy(renderer, currentTimeText, nullptr, &textRect);
+            }
+            if (totalTimeText) {
+                int textW, textH;
+                SDL_QueryTexture(totalTimeText, nullptr, nullptr, &textW, &textH);
+                SDL_Rect textRect = {sliderTrack.x + sliderTrack.w + 5, sliderTrack.y - textH / 2, textW, textH};
+                SDL_RenderCopy(renderer, totalTimeText, nullptr, &textRect);
+            }
 
             // Отрисовка ползунка прокрутки
             SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
@@ -564,12 +634,14 @@ int main(int argc, char* argv[]) {
                 SDL_RenderFillRect(renderer, &musicSquares[i]);
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_RenderDrawRect(renderer, &musicSquares[i]);
-                // Отрисовка текста названия файла
                 if (i + musicScrollOffset < musicFileTextures.size() && musicFileTextures[i + musicScrollOffset]) {
                     int textW, textH;
                     SDL_QueryTexture(musicFileTextures[i + musicScrollOffset], nullptr, nullptr, &textW, &textH);
                     SDL_Rect textRect = {musicSquares[i].x + 5, musicSquares[i].y + (musicSquares[i].h - textH) / 2, textW, textH};
+                    SDL_Rect clipRect = {musicSquares[i].x + 5, musicSquares[i].y, 130, musicSquares[i].h};
+                    SDL_RenderSetClipRect(renderer, &clipRect);
                     SDL_RenderCopy(renderer, musicFileTextures[i + musicScrollOffset], nullptr, &textRect);
+                    SDL_RenderSetClipRect(renderer, nullptr);
                 }
             }
         }
@@ -594,10 +666,100 @@ int main(int argc, char* argv[]) {
                         Mix_PauseMusic();
                     }
                 }
+                else if (event.key.keysym.sym == SDLK_UP && !musicFiles.empty()) {
+                    // Переключение на предыдущий трек
+                    if (currentTrackIndex > 0) {
+                        currentTrackIndex--;
+                    } else {
+                        currentTrackIndex = musicFiles.size() - 1;
+                    }
+                    musicPath = musicFiles[currentTrackIndex];
+                    if (musicStarted) {
+                        Mix_HaltMusic();
+                        musicStarted = false;
+                    }
+                    if (bgm) {
+                        Mix_FreeMusic(bgm);
+                    }
+                    bgm = Mix_LoadMUS(musicPath.c_str());
+                    if (!bgm) {
+                        std::cerr << "Failed to load new bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+                    } else {
+                        if (Mix_PlayMusic(bgm, -1) == -1) {
+                            std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+                        } else {
+                            musicStarted = true;
+                        }
+                    }
+                    if (pauseButtonText) SDL_DestroyTexture(pauseButtonText);
+                    currentTrack = fs::path(musicPath).filename().string();
+                    pauseButtonText = createTextTexture(renderer, font, currentTrack, textColor);
+                    needsScrolling = currentTrack.length() > 30;
+                    textOffset = 0;
+                    if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+                    musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+                    totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+                    std::ofstream outFile("music_path.txt");
+                    if (outFile.is_open()) {
+                        outFile << musicPath << "\n" << folderPath;
+                        outFile.close();
+                    }
+                }
+                else if (event.key.keysym.sym == SDLK_DOWN && !musicFiles.empty()) {
+                    // Переключение на следующий трек
+                    if (currentTrackIndex < musicFiles.size() - 1) {
+                        currentTrackIndex++;
+                    } else {
+                        currentTrackIndex = 0;
+                    }
+                    musicPath = musicFiles[currentTrackIndex];
+                    if (musicStarted) {
+                        Mix_HaltMusic();
+                        musicStarted = false;
+                    }
+                    if (bgm) {
+                        Mix_FreeMusic(bgm);
+                    }
+                    bgm = Mix_LoadMUS(musicPath.c_str());
+                    if (!bgm) {
+                        std::cerr << "Failed to load new bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+                    } else {
+                        if (Mix_PlayMusic(bgm, -1) == -1) {
+                            std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+                        } else {
+                            musicStarted = true;
+                        }
+                    }
+                    if (pauseButtonText) SDL_DestroyTexture(pauseButtonText);
+                    currentTrack = fs::path(musicPath).filename().string();
+                    pauseButtonText = createTextTexture(renderer, font, currentTrack, textColor);
+                    needsScrolling = currentTrack.length() > 30;
+                    textOffset = 0;
+                    if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+                    musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+                    totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+                    std::ofstream outFile("music_path.txt");
+                    if (outFile.is_open()) {
+                        outFile << musicPath << "\n" << folderPath;
+                        outFile.close();
+                    }
+                }
+                else if (event.key.keysym.sym == SDLK_LEFT && bgm && musicStarted) {
+                    // Перемотка назад на 5 секунд
+                    double currentPosition = Mix_GetMusicPosition(bgm);
+                    double newPosition = std::max(0.0, currentPosition - 5.0);
+                    Mix_SetMusicPosition(newPosition);
+                }
+                else if (event.key.keysym.sym == SDLK_RIGHT && bgm && musicStarted) {
+                    // Перемотка вперёд на 5 секунд
+                    double currentPosition = Mix_GetMusicPosition(bgm);
+                    double musicDuration = Mix_MusicDuration(bgm);
+                    double newPosition = std::min(musicDuration, currentPosition + 5.0);
+                    Mix_SetMusicPosition(newPosition);
+                }
             }
             else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
                 if (scene == 0 && MouseOnKnopka1) {
-                    // Выбор папки
                     const char* selectedFolder = tinyfd_selectFolderDialog("Выберите папку с музыкой", "");
                     if (selectedFolder) {
                         folderPath = selectedFolder;
@@ -607,21 +769,39 @@ int main(int argc, char* argv[]) {
                             if (texture) SDL_DestroyTexture(texture);
                         }
                         musicFileTextures.clear();
+                        currentTrackIndex = 0;
                         for (const auto& entry : fs::directory_iterator(folderPath)) {
                             if (entry.path().extension() == ".mp3" || entry.path().extension() == ".wav") {
                                 musicFiles.push_back(entry.path().string());
                                 std::string filename = fs::path(entry.path()).filename().string();
-                                SDL_Texture* textTexture = createTextTexture(renderer, font, filename, textColor);
+                                SDL_Texture* textTexture = createTextTexture(renderer, font, filename, textColor, 130);
                                 musicFileTextures.push_back(textTexture);
                             }
                         }
                         musicScrollOffset = 0;
                         musicSquares.clear();
                         for (size_t i = 0; i < musicFiles.size() && i < maxVisibleSquares; ++i) {
-                            musicSquares.push_back({550, static_cast<int>(50 + i * 60), 150, 50});
+                            musicSquares.push_back({650, static_cast<int>(50 + i * 55), 140, 50});
                         }
-
-                        // Сохранение пути к папке
+                        if (!musicFiles.empty()) {
+                            musicPath = musicFiles[0];
+                            if (musicStarted) {
+                                Mix_HaltMusic();
+                                musicStarted = false;
+                            }
+                            if (bgm) {
+                                Mix_FreeMusic(bgm);
+                            }
+                            bgm = Mix_LoadMUS(musicPath.c_str());
+                            if (pauseButtonText) SDL_DestroyTexture(pauseButtonText);
+                            currentTrack = fs::path(musicPath).filename().string();
+                            pauseButtonText = createTextTexture(renderer, font, currentTrack, textColor);
+                            needsScrolling = currentTrack.length() > 30;
+                            textOffset = 0;
+                            if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+                            musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+                            totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+                        }
                         std::ofstream outFile("music_path.txt");
                         if (outFile.is_open()) {
                             outFile << musicPath << "\n" << folderPath;
@@ -630,7 +810,6 @@ int main(int argc, char* argv[]) {
                     }
                 }
                 else if (scene == 0 && MouseOnKnopka11) {
-                    // Кнопка паузы
                     if (Mix_PausedMusic()) {
                         Mix_ResumeMusic();
                     } else {
@@ -644,10 +823,10 @@ int main(int argc, char* argv[]) {
                     isDraggingMusicScroll = true;
                 }
                 else if (scene == 0) {
-                    // Проверка клика по квадратам
                     for (size_t i = 0; i < musicSquares.size(); ++i) {
                         if (MouseOnMusicSquare[i] && i + musicScrollOffset < musicFiles.size()) {
-                            musicPath = musicFiles[i + musicScrollOffset];
+                            currentTrackIndex = i + musicScrollOffset;
+                            musicPath = musicFiles[currentTrackIndex];
                             if (musicStarted) {
                                 Mix_HaltMusic();
                                 musicStarted = false;
@@ -665,11 +844,14 @@ int main(int argc, char* argv[]) {
                                     musicStarted = true;
                                 }
                             }
-                            // Обновление текста на кнопке паузы
                             if (pauseButtonText) SDL_DestroyTexture(pauseButtonText);
                             currentTrack = fs::path(musicPath).filename().string();
                             pauseButtonText = createTextTexture(renderer, font, currentTrack, textColor);
-                            // Сохранение пути к файлу
+                            needsScrolling = currentTrack.length() > 30;
+                            textOffset = 0;
+                            if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+                            musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+                            totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
                             std::ofstream outFile("music_path.txt");
                             if (outFile.is_open()) {
                                 outFile << musicPath << "\n" << folderPath;
@@ -710,22 +892,23 @@ int main(int argc, char* argv[]) {
                     musicScrollHandle.y = newY;
                     float progress = static_cast<float>(musicScrollHandle.y - musicScrollTrack.y) / (musicScrollTrack.h - musicScrollHandle.h);
                     musicScrollOffset = static_cast<int>(progress * (musicFiles.size() - maxVisibleSquares));
-                    // Обновление позиций квадратов
                     musicSquares.clear();
                     for (size_t i = musicScrollOffset; i < musicFiles.size() && i < musicScrollOffset + maxVisibleSquares; ++i) {
-                        musicSquares.push_back({550, static_cast<int>(50 + (i - musicScrollOffset) * 60), 150, 50});
+                        musicSquares.push_back({650, static_cast<int>(50 + (i - musicScrollOffset) * 55), 140, 50});
                     }
                 }
             }
         }
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16); // ~60 FPS
+        SDL_Delay(16);
     }
 
     // Очистка ресурсов
     if (bgm) Mix_FreeMusic(bgm);
     if (pauseButtonText) SDL_DestroyTexture(pauseButtonText);
+    if (currentTimeText) SDL_DestroyTexture(currentTimeText);
+    if (totalTimeText) SDL_DestroyTexture(totalTimeText);
     for (auto& texture : musicFileTextures) {
         if (texture) SDL_DestroyTexture(texture);
     }
