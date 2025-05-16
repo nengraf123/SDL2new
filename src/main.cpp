@@ -253,6 +253,950 @@
 //    return 0;
 //}
 
+
+// #include <SDL2/SDL.h>
+// #include <SDL2/SDL_keycode.h>
+// #include <SDL2/SDL_scancode.h>
+// #include <SDL2/SDL_surface.h>
+// #include <SDL2/SDL_mixer.h>
+// #include <SDL2/SDL_image.h>
+// #include <SDL2/SDL_ttf.h>
+// #include <iostream>
+// #include <vector>
+// #include <functional>
+// #include <fstream>
+// #include <filesystem>
+// #include <string>
+// #include "tinyfiledialogs.h"
+
+// namespace fs = std::filesystem;
+
+// // Определение цветов
+// SDL_Color bgColor = {28, 28, 28, 255};        // #1C1C1C
+// SDL_Color buttonColor = {51, 51, 51, 255};    // #333333
+// SDL_Color buttonHoverColor = {85, 85, 85, 255}; // #555555
+// SDL_Color textColor = {255, 255, 255, 255};   // #FFFFFF
+// SDL_Color shadowColor = {0, 0, 0, 128};       // Полупрозрачная тень
+// SDL_Color sliderTrackColor = {68, 68, 68, 255}; // #444444
+// SDL_Color sliderActiveColor = {102, 102, 102, 255}; // #666666
+// SDL_Color sliderHandleColor = {255, 255, 255, 255}; // #FFFFFF
+// SDL_Color borderColor = {0, 0, 0, 255};       // #000000
+
+// // Функция для рендеринга текста с обрезкой и сглаживанием
+// SDL_Texture* createTextTexture(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, SDL_Color color, int maxWidth = -1) {
+//     std::string displayText = text;
+//     if (maxWidth > 0) {
+//         int w;
+//         TTF_SizeUTF8(font, text.c_str(), &w, nullptr);
+//         if (w > maxWidth) {
+//             displayText = text;
+//             while (TTF_SizeUTF8(font, (displayText + "...").c_str(), &w, nullptr), w > maxWidth && !displayText.empty()) {
+//                 displayText.pop_back();
+//             }
+//             displayText += "...";
+//         }
+//     }
+//     SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, displayText.c_str(), color);
+//     if (!textSurface) {
+//         std::cerr << "TTF_RenderUTF8_Blended Error: " << TTF_GetError() << std::endl;
+//         return nullptr;
+//     }
+//     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+//     SDL_FreeSurface(textSurface);
+//     if (!textTexture) {
+//         std::cerr << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
+//     }
+//     return textTexture;
+// }
+
+// // Форматирование времени в MM:SS
+// std::string formatTime(double seconds) {
+//     int totalSeconds = static_cast<int>(seconds);
+//     int minutes = totalSeconds / 60;
+//     int secs = totalSeconds % 60;
+//     char buffer[6];
+//     snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, secs);
+//     return std::string(buffer);
+// }
+
+// int main(int argc, char* argv[]) {
+//     // Установка локали для поддержки UTF-8
+//     SDL_SetMainReady();
+//     setlocale(LC_ALL, "ru_RU.UTF-8");
+
+//     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+
+//     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+//         std::cerr << "Ошибка инициализации SDL: " << SDL_GetError() << std::endl;
+//         return 1;
+//     }
+
+//     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+//         std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << std::endl;
+//         SDL_Quit();
+//         return 1;
+//     }
+
+//     int imgFlags = IMG_INIT_PNG;
+//     if (!(IMG_Init(imgFlags) & imgFlags)) {
+//         std::cerr << "IMG_Init Error: " << IMG_GetError() << std::endl;
+//         SDL_Quit();
+//         return 1;
+//     }
+
+//     if (TTF_Init() == -1) {
+//         std::cerr << "TTF_Init Error: " << TTF_GetError() << std::endl;
+//         IMG_Quit();
+//         SDL_Quit();
+//         return 1;
+//     }
+
+//     // Загрузка шрифта с поддержкой кириллицы
+//     TTF_Font* font = TTF_OpenFont("arial.ttf", 20);
+//     TTF_Font* trackFont = TTF_OpenFont("arial.ttf", 40);
+//     TTF_Font* titleFont = TTF_OpenFont("arial.ttf", 48); // Шрифт для заголовка
+//     if (!font || !trackFont || !titleFont) {
+//         std::cerr << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
+//         TTF_Quit();
+//         IMG_Quit();
+//         SDL_Quit();
+//         return 1;
+//     }
+
+//     SDL_Window* window = SDL_CreateWindow(
+//         "Музыкальный плеер",
+//         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+//         800, 750,
+//         SDL_WINDOW_SHOWN
+//     );
+//     if (!window) {
+//         std::cerr << "Ошибка создания окна: " << SDL_GetError() << std::endl;
+//         TTF_CloseFont(font);
+//         TTF_CloseFont(trackFont);
+//         TTF_CloseFont(titleFont);
+//         TTF_Quit();
+//         IMG_Quit();
+//         SDL_Quit();
+//         return 1;
+//     }
+
+//     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+//     if (!renderer) {
+//         std::cerr << "Ошибка создания рендера: " << SDL_GetError() << std::endl;
+//         SDL_DestroyWindow(window);
+//         TTF_CloseFont(font);
+//         TTF_CloseFont(trackFont);
+//         TTF_CloseFont(titleFont);
+//         TTF_Quit();
+//         IMG_Quit();
+//         SDL_Quit();
+//         return 1;
+//     }
+
+//     std::string musicPath = "muzika.mp3";
+//     std::string folderPath;
+//     std::ifstream musicPathFile("music_path.txt");
+//     if (musicPathFile.is_open()) {
+//         std::getline(musicPathFile, musicPath);
+//         std::getline(musicPathFile, folderPath);
+//         musicPathFile.close();
+//     }
+
+//     Mix_Music* bgm = Mix_LoadMUS(musicPath.c_str());
+//     if (!bgm) {
+//         std::cerr << "Failed to load bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+//     }
+
+//     std::vector<std::string> musicFiles;
+//     size_t currentTrackIndex = 0;
+//     if (!folderPath.empty() && fs::exists(folderPath)) {
+//         for (const auto& entry : fs::directory_iterator(folderPath)) {
+//             if (entry.path().extension() == ".mp3" || entry.path().extension() == ".wav") {
+//                 musicFiles.push_back(entry.path().string());
+//                 if (entry.path().string() == musicPath) {
+//                     currentTrackIndex = musicFiles.size() - 1;
+//                 }
+//             }
+//         }
+//     }
+
+//     // Определение кнопок для главного меню
+//     SDL_Rect menuButton1 {300, 300, 200, 75}; // Начать
+//     SDL_Rect menuButton2 {300, 400, 200, 75}; // Настройки
+//     SDL_Rect menuButton3 {300, 500, 200, 75}; // Выход
+
+//     // Определение кнопок для плеера
+//     SDL_Rect knopka1 {0, 0, 200, 75};    // Выбор папки
+//     SDL_Rect knopka2 {0, 75, 200, 75};   // Выход
+//     SDL_Rect knopka11 {340, 550, 120, 75}; // Пауза
+
+//     // Ползунок перемотки
+//     SDL_Rect sliderTrack {300, 500, 200, 10};
+//     SDL_Rect sliderHandle {300, 495, 10, 20};
+//     bool isDraggingSlider = false;
+
+//     // Ползунок прокрутки музыки
+//     SDL_Rect musicScrollTrack {790, 50, 10, 385};
+//     SDL_Rect musicScrollHandle {790, 50, 10, 20};
+//     bool isDraggingMusicScroll = false;
+//     int musicScrollOffset = 0;
+//     const int maxVisibleSquares = 7;
+
+//     // Квадраты для музыкальных файлов
+//     std::vector<SDL_Rect> musicSquares;
+//     for (size_t i = 0; i < musicFiles.size() && i < maxVisibleSquares; ++i) {
+//         musicSquares.push_back({650, static_cast<int>(50 + i * 55), 140, 50});
+//     }
+
+//     // Текстуры для названий файлов
+//     std::vector<SDL_Texture*> musicFileTextures;
+//     for (const auto& file : musicFiles) {
+//         std::string filename = fs::path(file).filename().string();
+//         SDL_Texture* textTexture = createTextTexture(renderer, font, filename, textColor, 130);
+//         musicFileTextures.push_back(textTexture);
+//     }
+
+//     // Текст для трека
+//     std::string currentTrack = fs::path(musicPath).filename().string();
+//     SDL_Texture* trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
+//     int textOffset = 0;
+//     Uint32 lastTextUpdate = SDL_GetTicks();
+//     bool needsScrolling = currentTrack.length() > 15;
+
+//     // Текст для времени трека
+//     SDL_Texture* currentTimeText = nullptr;
+//     SDL_Texture* totalTimeText = nullptr;
+//     SDL_Texture* hoverTimeText = nullptr;
+//     double musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+//     totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+//     currentTimeText = createTextTexture(renderer, font, "00:00", textColor);
+
+//     // Квадрат для обложки
+//     SDL_Rect coverRect {300, 100, 200, 200};
+//     SDL_Texture* coverTexture = nullptr;
+//     std::string coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+//     if (fs::exists(coverPath)) {
+//         SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
+//         if (coverSurface) {
+//             coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+//             SDL_FreeSurface(coverSurface);
+//         }
+//     }
+
+//     SDL_Rect KvadratNaCursore = {0, 0, 2, 2};
+//     int scene = -1; // Начальная сцена — главное меню
+//     bool musicStarted = false;
+//     bool running = true;
+
+//     SDL_Event event;
+//     while (running) {
+//         int mx, my;
+//         SDL_GetMouseState(&mx, &my);
+//         KvadratNaCursore.x = mx - KvadratNaCursore.w / 2;
+//         KvadratNaCursore.y = my - KvadratNaCursore.h / 2;
+
+//         const Uint8* keyState = SDL_GetKeyboardState(NULL);
+//         if (keyState[SDL_SCANCODE_ESCAPE]) {
+//             if (scene == -1) {
+//                 running = false; // Выйти из приложения из главного меню
+//             } else {
+//                 scene = -1; // Вернуться в главное меню из плеера
+//             }
+//         }
+
+//         bool MouseOnKnopka1 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
+//         bool MouseOnKnopka2 = SDL_HasIntersection(&KvadratNaCursore, &knopka2);
+//         bool MouseOnKnopka11 = SDL_HasIntersection(&KvadratNaCursore, &knopka11);
+//         bool MouseOnSlider = SDL_HasIntersection(&KvadratNaCursore, &sliderHandle);
+//         bool MouseOnSliderTrack = (mx >= sliderTrack.x && mx <= sliderTrack.x + sliderTrack.w && my >= sliderTrack.y && my <= sliderTrack.y + sliderTrack.h);
+//         bool MouseOnMusicScroll = SDL_HasIntersection(&KvadratNaCursore, &musicScrollHandle);
+//         bool MouseOnCover = SDL_HasIntersection(&KvadratNaCursore, &coverRect);
+
+//         // Определение наведения на кнопки главного меню
+//         bool MouseOnMenuButton1 = SDL_HasIntersection(&KvadratNaCursore, &menuButton1);
+//         bool MouseOnMenuButton2 = SDL_HasIntersection(&KvadratNaCursore, &menuButton2);
+//         bool MouseOnMenuButton3 = SDL_HasIntersection(&KvadratNaCursore, &menuButton3);
+
+//         std::vector<bool> MouseOnMusicSquare(musicSquares.size(), false);
+//         for (size_t i = 0; i < musicSquares.size(); ++i) {
+//             MouseOnMusicSquare[i] = SDL_HasIntersection(&KvadratNaCursore, &musicSquares[i]);
+//         }
+
+//         if (bgm && musicStarted && !isDraggingSlider) {
+//             double musicDuration = Mix_MusicDuration(bgm);
+//             double currentPosition = Mix_GetMusicPosition(bgm);
+//             if (musicDuration > 0) {
+//                 float progress = static_cast<float>(currentPosition) / musicDuration;
+//                 sliderHandle.x = sliderTrack.x + static_cast<int>(progress * (sliderTrack.w - sliderHandle.w));
+//             }
+//             if (currentTimeText) SDL_DestroyTexture(currentTimeText);
+//             currentTimeText = createTextTexture(renderer, font, formatTime(currentPosition), textColor);
+//         }
+
+//         if (MouseOnSliderTrack && bgm) {
+//             if (hoverTimeText) SDL_DestroyTexture(hoverTimeText);
+//             double musicDuration = Mix_MusicDuration(bgm);
+//             if (musicDuration > 0) {
+//                 float progress = static_cast<float>(mx - sliderTrack.x) / sliderTrack.w;
+//                 double hoverPosition = progress * musicDuration;
+//                 hoverTimeText = createTextTexture(renderer, font, formatTime(hoverPosition), textColor);
+//             }
+//         } else {
+//             if (hoverTimeText) SDL_DestroyTexture(hoverTimeText);
+//             hoverTimeText = nullptr;
+//         }
+
+//         if (!isDraggingMusicScroll && musicFiles.size() > maxVisibleSquares) {
+//             float progress = static_cast<float>(musicScrollOffset) / (musicFiles.size() - maxVisibleSquares);
+//             musicScrollHandle.y = musicScrollTrack.y + static_cast<int>(progress * (musicScrollTrack.h - musicScrollHandle.h));
+//         }
+
+//         if (needsScrolling) {
+//             Uint32 currentTime = SDL_GetTicks();
+//             if (currentTime - lastTextUpdate >= 50) {
+//                 textOffset++;
+//                 int textW, textH;
+//                 SDL_QueryTexture(trackText, nullptr, nullptr, &textW, &textH);
+//                 if (textOffset >= textW - 300) {
+//                     textOffset = 0;
+//                 }
+//                 lastTextUpdate = currentTime;
+//             }
+//         } else {
+//             textOffset = 0;
+//         }
+
+//         // Очистка экрана
+//         SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+//         SDL_RenderClear(renderer);
+
+//         if (scene == -1) { // Главное меню
+//             // Отрисовка заголовка
+//             SDL_Texture* titleText = createTextTexture(renderer, titleFont, "Музыкальный плеер", textColor);
+//             if (titleText) {
+//                 int tw, th;
+//                 SDL_QueryTexture(titleText, nullptr, nullptr, &tw, &th);
+//                 SDL_Rect tr = {400 - tw / 2, 150 - th / 2, tw, th};
+//                 SDL_Rect shadowTr = {tr.x + 3, tr.y + 3, tw, th};
+//                 SDL_SetTextureColorMod(titleText, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(titleText, shadowColor.a);
+//                 SDL_RenderCopy(renderer, titleText, nullptr, &shadowTr);
+//                 SDL_SetTextureColorMod(titleText, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(titleText, 255);
+//                 SDL_RenderCopy(renderer, titleText, nullptr, &tr);
+//                 SDL_DestroyTexture(titleText);
+//             }
+
+//             // Отрисовка кнопки "Начать"
+//             SDL_SetRenderDrawColor(renderer, MouseOnMenuButton1 ? buttonHoverColor.r : buttonColor.r, MouseOnMenuButton1 ? buttonHoverColor.g : buttonColor.g, MouseOnMenuButton1 ? buttonHoverColor.b : buttonColor.b, 255);
+//             SDL_RenderFillRect(renderer, &menuButton1);
+//             SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//             SDL_RenderDrawRect(renderer, &menuButton1);
+//             SDL_Texture* btn1Text = createTextTexture(renderer, font, "Начать", textColor, 180);
+//             if (btn1Text) {
+//                 int tw, th;
+//                 SDL_QueryTexture(btn1Text, nullptr, nullptr, &tw, &th);
+//                 SDL_Rect tr = {menuButton1.x + (menuButton1.w - tw) / 2, menuButton1.y + (menuButton1.h - th) / 2, tw, th};
+//                 SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+//                 SDL_SetTextureColorMod(btn1Text, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(btn1Text, shadowColor.a);
+//                 SDL_RenderCopy(renderer, btn1Text, nullptr, &shadowTr);
+//                 SDL_SetTextureColorMod(btn1Text, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(btn1Text, 255);
+//                 SDL_RenderCopy(renderer, btn1Text, nullptr, &tr);
+//                 SDL_DestroyTexture(btn1Text);
+//             }
+
+//             // Отрисовка кнопки "Настройки"
+//             SDL_SetRenderDrawColor(renderer, MouseOnMenuButton2 ? buttonHoverColor.r : buttonColor.r, MouseOnMenuButton2 ? buttonHoverColor.g : buttonColor.g, MouseOnMenuButton2 ? buttonHoverColor.b : buttonColor.b, 255);
+//             SDL_RenderFillRect(renderer, &menuButton2);
+//             SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//             SDL_RenderDrawRect(renderer, &menuButton2);
+//             SDL_Texture* btn2Text = createTextTexture(renderer, font, "Настройки", textColor, 180);
+//             if (btn2Text) {
+//                 int tw, th;
+//                 SDL_QueryTexture(btn2Text, nullptr, nullptr, &tw, &th);
+//                 SDL_Rect tr = {menuButton2.x + (menuButton2.w - tw) / 2, menuButton2.y + (menuButton2.h - th) / 2, tw, th};
+//                 SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+//                 SDL_SetTextureColorMod(btn2Text, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(btn2Text, shadowColor.a);
+//                 SDL_RenderCopy(renderer, btn2Text, nullptr, &shadowTr);
+//                 SDL_SetTextureColorMod(btn2Text, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(btn2Text, 255);
+//                 SDL_RenderCopy(renderer, btn2Text, nullptr, &tr);
+//                 SDL_DestroyTexture(btn2Text);
+//             }
+
+//             // Отрисовка кнопки "Выход"
+//             SDL_SetRenderDrawColor(renderer, MouseOnMenuButton3 ? buttonHoverColor.r : buttonColor.r, MouseOnMenuButton3 ? buttonHoverColor.g : buttonColor.g, MouseOnMenuButton3 ? buttonHoverColor.b : buttonColor.b, 255);
+//             SDL_RenderFillRect(renderer, &menuButton3);
+//             SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//             SDL_RenderDrawRect(renderer, &menuButton3);
+//             SDL_Texture* btn3Text = createTextTexture(renderer, font, "Выход", textColor, 180);
+//             if (btn3Text) {
+//                 int tw, th;
+//                 SDL_QueryTexture(btn3Text, nullptr, nullptr, &tw, &th);
+//                 SDL_Rect tr = {menuButton3.x + (menuButton3.w - tw) / 2, menuButton3.y + (menuButton3.h - th) / 2, tw, th};
+//                 SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+//                 SDL_SetTextureColorMod(btn3Text, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(btn3Text, shadowColor.a);
+//                 SDL_RenderCopy(renderer, btn3Text, nullptr, &shadowTr);
+//                 SDL_SetTextureColorMod(btn3Text, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(btn3Text, 255);
+//                 SDL_RenderCopy(renderer, btn3Text, nullptr, &tr);
+//                 SDL_DestroyTexture(btn3Text);
+//             }
+//         }
+//         else if (scene == 0) { // Плеер
+//             // Отрисовка обложки с тенью и рамкой
+//             SDL_Rect shadowRect = {coverRect.x + 5, coverRect.y + 5, coverRect.w, coverRect.h};
+//             SDL_SetRenderDrawColor(renderer, shadowColor.r, shadowColor.g, shadowColor.b, shadowColor.a);
+//             SDL_RenderFillRect(renderer, &shadowRect);
+//             SDL_SetRenderDrawColor(renderer, buttonColor.r, buttonColor.g, buttonColor.b, buttonColor.a);
+//             SDL_RenderFillRect(renderer, &coverRect);
+//             SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//             SDL_RenderDrawRect(renderer, &coverRect);
+//             if (coverTexture) {
+//                 SDL_RenderCopy(renderer, coverTexture, nullptr, &coverRect);
+//             }
+
+//             // Отрисовка кнопок плеера
+//             SDL_SetRenderDrawColor(renderer, MouseOnKnopka1 ? buttonHoverColor.r : buttonColor.r, MouseOnKnopka1 ? buttonHoverColor.g : buttonColor.g, MouseOnKnopka1 ? buttonHoverColor.b : buttonColor.b, 255);
+//             SDL_RenderFillRect(renderer, &knopka1);
+//             SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//             SDL_RenderDrawRect(renderer, &knopka1);
+//             SDL_Texture* btn1Text = createTextTexture(renderer, font, "Выбрать папку", textColor, 180);
+//             if (btn1Text) {
+//                 int tw, th;
+//                 SDL_QueryTexture(btn1Text, nullptr, nullptr, &tw, &th);
+//                 SDL_Rect tr = {knopka1.x + (knopka1.w - tw) / 2, knopka1.y + (knopka1.h - th) / 2, tw, th};
+//                 SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+//                 SDL_SetTextureColorMod(btn1Text, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(btn1Text, shadowColor.a);
+//                 SDL_RenderCopy(renderer, btn1Text, nullptr, &shadowTr);
+//                 SDL_SetTextureColorMod(btn1Text, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(btn1Text, 255);
+//                 SDL_RenderCopy(renderer, btn1Text, nullptr, &tr);
+//                 SDL_DestroyTexture(btn1Text);
+//             }
+
+//             SDL_SetRenderDrawColor(renderer, MouseOnKnopka2 ? buttonHoverColor.r : buttonColor.r, MouseOnKnopka2 ? buttonHoverColor.g : buttonColor.g, MouseOnKnopka2 ? buttonHoverColor.b : buttonColor.b, 255);
+//             SDL_RenderFillRect(renderer, &knopka2);
+//             SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//             SDL_RenderDrawRect(renderer, &knopka2);
+//             SDL_Texture* btn2Text = createTextTexture(renderer, font, "Выход", textColor, 180);
+//             if (btn2Text) {
+//                 int tw, th;
+//                 SDL_QueryTexture(btn2Text, nullptr, nullptr, &tw, &th);
+//                 SDL_Rect tr = {knopka2.x + (knopka2.w - tw) / 2, knopka2.y + (knopka2.h - th) / 2, tw, th};
+//                 SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+//                 SDL_SetTextureColorMod(btn2Text, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(btn2Text, shadowColor.a);
+//                 SDL_RenderCopy(renderer, btn2Text, nullptr, &shadowTr);
+//                 SDL_SetTextureColorMod(btn2Text, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(btn2Text, 255);
+//                 SDL_RenderCopy(renderer, btn2Text, nullptr, &tr);
+//                 SDL_DestroyTexture(btn2Text);
+//             }
+
+//             SDL_SetRenderDrawColor(renderer, MouseOnKnopka11 ? buttonHoverColor.r : buttonColor.r, MouseOnKnopka11 ? buttonHoverColor.g : buttonColor.g, MouseOnKnopka11 ? buttonHoverColor.b : buttonColor.b, 255);
+//             SDL_RenderFillRect(renderer, &knopka11);
+//             SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//             SDL_RenderDrawRect(renderer, &knopka11);
+//             SDL_Texture* btn11Text = createTextTexture(renderer, font, Mix_PausedMusic() ? "Играть" : "Пауза", textColor, 100);
+//             if (btn11Text) {
+//                 int tw, th;
+//                 SDL_QueryTexture(btn11Text, nullptr, nullptr, &tw, &th);
+//                 SDL_Rect tr = {knopka11.x + (knopka11.w - tw) / 2, knopka11.y + (knopka11.h - th) / 2, tw, th};
+//                 SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+//                 SDL_SetTextureColorMod(btn11Text, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(btn11Text, shadowColor.a);
+//                 SDL_RenderCopy(renderer, btn11Text, nullptr, &shadowTr);
+//                 SDL_SetTextureColorMod(btn11Text, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(btn11Text, 255);
+//                 SDL_RenderCopy(renderer, btn11Text, nullptr, &tr);
+//                 SDL_DestroyTexture(btn11Text);
+//             }
+
+//             // Отрисовка текста трека с тенью
+//             if (trackText) {
+//                 int textW, textH;
+//                 SDL_QueryTexture(trackText, nullptr, nullptr, &textW, &textH);
+//                 SDL_Rect textRect = {300 - textOffset, 350, std::min(textW, 300), textH};
+//                 SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textRect.w, textRect.h};
+//                 SDL_Rect clipRect = {300, 350, 300, textH};
+//                 SDL_RenderSetClipRect(renderer, &clipRect);
+//                 SDL_SetTextureColorMod(trackText, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(trackText, shadowColor.a);
+//                 SDL_RenderCopy(renderer, trackText, nullptr, &shadowRect);
+//                 SDL_SetTextureColorMod(trackText, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(trackText, 255);
+//                 SDL_RenderCopy(renderer, trackText, nullptr, &textRect);
+//                 SDL_RenderSetClipRect(renderer, nullptr);
+//             }
+
+//             // Отрисовка ползунка перемотки
+//             SDL_SetRenderDrawColor(renderer, sliderTrackColor.r, sliderTrackColor.g, sliderTrackColor.b, sliderTrackColor.a);
+//             SDL_RenderFillRect(renderer, &sliderTrack);
+//             int handlePos = sliderHandle.x - sliderTrack.x;
+//             SDL_Rect activePart = {sliderTrack.x, sliderTrack.y, handlePos + sliderHandle.w / 2, sliderTrack.h};
+//             SDL_SetRenderDrawColor(renderer, sliderActiveColor.r, sliderActiveColor.g, sliderActiveColor.b, sliderActiveColor.a);
+//             SDL_RenderFillRect(renderer, &activePart);
+//             SDL_SetRenderDrawColor(renderer, sliderHandleColor.r, sliderHandleColor.g, sliderHandleColor.b, sliderHandleColor.a);
+//             SDL_RenderFillRect(renderer, &sliderHandle);
+//             SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//             SDL_RenderDrawRect(renderer, &sliderHandle);
+
+//             // Отрисовка времени трека с тенью
+//             if (currentTimeText) {
+//                 int textW, textH;
+//                 SDL_QueryTexture(currentTimeText, nullptr, nullptr, &textW, &textH);
+//                 SDL_Rect textRect = {sliderTrack.x - textW - 5, sliderTrack.y - textH / 2, textW, textH};
+//                 SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+//                 SDL_SetTextureColorMod(currentTimeText, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(currentTimeText, shadowColor.a);
+//                 SDL_RenderCopy(renderer, currentTimeText, nullptr, &shadowRect);
+//                 SDL_SetTextureColorMod(currentTimeText, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(currentTimeText, 255);
+//                 SDL_RenderCopy(renderer, currentTimeText, nullptr, &textRect);
+//             }
+//             if (totalTimeText) {
+//                 int textW, textH;
+//                 SDL_QueryTexture(totalTimeText, nullptr, nullptr, &textW, &textH);
+//                 SDL_Rect textRect = {sliderTrack.x + sliderTrack.w + 5, sliderTrack.y - textH / 2, textW, textH};
+//                 SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+//                 SDL_SetTextureColorMod(totalTimeText, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(totalTimeText, shadowColor.a);
+//                 SDL_RenderCopy(renderer, totalTimeText, nullptr, &shadowRect);
+//                 SDL_SetTextureColorMod(totalTimeText, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(totalTimeText, 255);
+//                 SDL_RenderCopy(renderer, totalTimeText, nullptr, &textRect);
+//             }
+
+//             // Отрисовка времени при наведении
+//             if (hoverTimeText) {
+//                 int textW, textH;
+//                 SDL_QueryTexture(hoverTimeText, nullptr, nullptr, &textW, &textH);
+//                 SDL_Rect textRect = {mx - textW / 2, my - textH - 5, textW, textH};
+//                 SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+//                 SDL_SetTextureColorMod(hoverTimeText, shadowColor.r, shadowColor.g, shadowColor.b);
+//                 SDL_SetTextureAlphaMod(hoverTimeText, shadowColor.a);
+//                 SDL_RenderCopy(renderer, hoverTimeText, nullptr, &shadowRect);
+//                 SDL_SetTextureColorMod(hoverTimeText, textColor.r, textColor.g, textColor.b);
+//                 SDL_SetTextureAlphaMod(hoverTimeText, 255);
+//                 SDL_RenderCopy(renderer, hoverTimeText, nullptr, &textRect);
+//             }
+
+//             // Отрисовка ползунка прокрутки
+//             SDL_SetRenderDrawColor(renderer, sliderTrackColor.r, sliderTrackColor.g, sliderTrackColor.b, sliderTrackColor.a);
+//             SDL_RenderFillRect(renderer, &musicScrollTrack);
+//             SDL_SetRenderDrawColor(renderer, MouseOnMusicScroll ? sliderActiveColor.r : sliderHandleColor.r, MouseOnMusicScroll ? sliderActiveColor.g : sliderHandleColor.g, MouseOnMusicScroll ? sliderActiveColor.b : sliderHandleColor.b, 255);
+//             SDL_RenderFillRect(renderer, &musicScrollHandle);
+//             SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//             SDL_RenderDrawRect(renderer, &musicScrollHandle);
+
+//             // Отрисовка квадратов для музыкальных файлов
+//             for (size_t i = 0; i < musicSquares.size(); ++i) {
+//                 SDL_SetRenderDrawColor(renderer, MouseOnMusicSquare[i] ? buttonHoverColor.r : buttonColor.r, MouseOnMusicSquare[i] ? buttonHoverColor.g : buttonColor.g, MouseOnMusicSquare[i] ? buttonHoverColor.b : buttonColor.b, 255);
+//                 SDL_RenderFillRect(renderer, &musicSquares[i]);
+//                 SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+//                 SDL_RenderDrawRect(renderer, &musicSquares[i]);
+//                 if (i + musicScrollOffset < musicFileTextures.size() && musicFileTextures[i + musicScrollOffset]) {
+//                     int textW, textH;
+//                     SDL_QueryTexture(musicFileTextures[i + musicScrollOffset], nullptr, nullptr, &textW, &textH);
+//                     SDL_Rect textRect = {musicSquares[i].x + 5, musicSquares[i].y + (musicSquares[i].h - textH) / 2, textW, textH};
+//                     SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+//                     SDL_Rect clipRect = {musicSquares[i].x + 5, musicSquares[i].y, 130, musicSquares[i].h};
+//                     SDL_RenderSetClipRect(renderer, &clipRect);
+//                     SDL_SetTextureColorMod(musicFileTextures[i + musicScrollOffset], shadowColor.r, shadowColor.g, shadowColor.b);
+//                     SDL_SetTextureAlphaMod(musicFileTextures[i + musicScrollOffset], shadowColor.a);
+//                     SDL_RenderCopy(renderer, musicFileTextures[i + musicScrollOffset], nullptr, &shadowRect);
+//                     SDL_SetTextureColorMod(musicFileTextures[i + musicScrollOffset], textColor.r, textColor.g, textColor.b);
+//                     SDL_SetTextureAlphaMod(musicFileTextures[i + musicScrollOffset], 255);
+//                     SDL_RenderCopy(renderer, musicFileTextures[i + musicScrollOffset], nullptr, &textRect);
+//                     SDL_RenderSetClipRect(renderer, nullptr);
+//                 }
+//             }
+//         }
+
+//         while (SDL_PollEvent(&event)) {
+//             if (event.type == SDL_QUIT) {
+//                 running = false;
+//             }
+//             else if (event.type == SDL_KEYDOWN) {
+//                 if (scene == 0) {
+//                     if (event.key.keysym.sym == SDLK_1 && bgm && !musicStarted) {
+//                         if (Mix_PlayMusic(bgm, -1) == -1) {
+//                             std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+//                         } else {
+//                             musicStarted = true;
+//                         }
+//                     }
+//                     else if (event.key.keysym.sym == SDLK_SPACE) {
+//                         if (Mix_PausedMusic()) {
+//                             Mix_ResumeMusic();
+//                         } else {
+//                             Mix_PauseMusic();
+//                         }
+//                     }
+//                     else if (event.key.keysym.sym == SDLK_UP && !musicFiles.empty()) {
+//                         if (currentTrackIndex > 0) {
+//                             currentTrackIndex--;
+//                         } else {
+//                             currentTrackIndex = musicFiles.size() - 1;
+//                         }
+//                         musicPath = musicFiles[currentTrackIndex];
+//                         if (musicStarted) {
+//                             Mix_HaltMusic();
+//                             musicStarted = false;
+//                         }
+//                         if (bgm) {
+//                             Mix_FreeMusic(bgm);
+//                         }
+//                         bgm = Mix_LoadMUS(musicPath.c_str());
+//                         if (!bgm) {
+//                             std::cerr << "Failed to load new bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+//                         } else {
+//                             if (Mix_PlayMusic(bgm, -1) == -1) {
+//                                 std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+//                             } else {
+//                                 musicStarted = true;
+//                             }
+//                         }
+//                         if (trackText) SDL_DestroyTexture(trackText);
+//                         currentTrack = fs::path(musicPath).filename().string();
+//                         trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
+//                         needsScrolling = currentTrack.length() > 15;
+//                         textOffset = 0;
+//                         if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+//                         musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+//                         totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+//                         if (coverTexture) SDL_DestroyTexture(coverTexture);
+//                         coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+//                         if (fs::exists(coverPath)) {
+//                             SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
+//                             if (coverSurface) {
+//                                 coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+//                                 SDL_FreeSurface(coverSurface);
+//                             }
+//                         } else {
+//                             coverTexture = nullptr;
+//                         }
+//                         std::ofstream outFile("music_path.txt");
+//                         if (outFile.is_open()) {
+//                             outFile << musicPath << "\n" << folderPath;
+//                             outFile.close();
+//                         }
+//                     }
+//                     else if (event.key.keysym.sym == SDLK_DOWN && !musicFiles.empty()) {
+//                         if (currentTrackIndex < musicFiles.size() - 1) {
+//                             currentTrackIndex++;
+//                         } else {
+//                             currentTrackIndex = 0;
+//                         }
+//                         musicPath = musicFiles[currentTrackIndex];
+//                         if (musicStarted) {
+//                             Mix_HaltMusic();
+//                             musicStarted = false;
+//                         }
+//                         if (bgm) {
+//                             Mix_FreeMusic(bgm);
+//                         }
+//                         bgm = Mix_LoadMUS(musicPath.c_str());
+//                         if (!bgm) {
+//                             std::cerr << "Failed to load new bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+//                         } else {
+//                             if (Mix_PlayMusic(bgm, -1) == -1) {
+//                                 std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+//                             } else {
+//                                 musicStarted = true;
+//                             }
+//                         }
+//                         if (trackText) SDL_DestroyTexture(trackText);
+//                         currentTrack = fs::path(musicPath).filename().string();
+//                         trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
+//                         needsScrolling = currentTrack.length() > 15;
+//                         textOffset = 0;
+//                         if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+//                         musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+//                         totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+//                         if (coverTexture) SDL_DestroyTexture(coverTexture);
+//                         coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+//                         if (fs::exists(coverPath)) {
+//                             SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
+//                             if (coverSurface) {
+//                                 coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+//                                 SDL_FreeSurface(coverSurface);
+//                             }
+//                         } else {
+//                             coverTexture = nullptr;
+//                         }
+//                         std::ofstream outFile("music_path.txt");
+//                         if (outFile.is_open()) {
+//                             outFile << musicPath << "\n" << folderPath;
+//                             outFile.close();
+//                         }
+//                     }
+//                     else if (event.key.keysym.sym == SDLK_LEFT && bgm && musicStarted) {
+//                         double currentPosition = Mix_GetMusicPosition(bgm);
+//                         double newPosition = std::max(0.0, currentPosition - 5.0);
+//                         Mix_SetMusicPosition(newPosition);
+//                     }
+//                     else if (event.key.keysym.sym == SDLK_RIGHT && bgm && musicStarted) {
+//                         double currentPosition = Mix_GetMusicPosition(bgm);
+//                         double musicDuration = Mix_MusicDuration(bgm);
+//                         double newPosition = std::min(musicDuration, currentPosition + 5.0);
+//                         Mix_SetMusicPosition(newPosition);
+//                     }
+//                 }
+//             }
+//             else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+//                 if (scene == -1) {
+//                     if (MouseOnMenuButton1) {
+//                         scene = 0; // Переход к плееру
+//                     }
+//                     else if (MouseOnMenuButton2) {
+//                         // Настройки (заглушка)
+//                         std::cout << "Открыты настройки (функционал не реализован)" << std::endl;
+//                     }
+//                     else if (MouseOnMenuButton3) {
+//                         running = false; // Выход из приложения
+//                     }
+//                 }
+//                 else if (scene == 0) {
+//                     if (MouseOnKnopka1) {
+//                         const char* selectedFolder = tinyfd_selectFolderDialog("Выберите папку с музыкой", "");
+//                         if (selectedFolder) {
+//                             folderPath = selectedFolder;
+//                             musicFiles.clear();
+//                             musicSquares.clear();
+//                             for (auto& texture : musicFileTextures) {
+//                                 if (texture) SDL_DestroyTexture(texture);
+//                             }
+//                             musicFileTextures.clear();
+//                             currentTrackIndex = 0;
+//                             for (const auto& entry : fs::directory_iterator(folderPath)) {
+//                                 if (entry.path().extension() == ".mp3" || entry.path().extension() == ".wav") {
+//                                     musicFiles.push_back(entry.path().string());
+//                                     std::string filename = fs::path(entry.path()).filename().string();
+//                                     SDL_Texture* textTexture = createTextTexture(renderer, font, filename, textColor, 130);
+//                                     musicFileTextures.push_back(textTexture);
+//                                 }
+//                             }
+//                             musicScrollOffset = 0;
+//                             musicSquares.clear();
+//                             for (size_t i = 0; i < musicFiles.size() && i < maxVisibleSquares; ++i) {
+//                                 musicSquares.push_back({650, static_cast<int>(50 + i * 55), 140, 50});
+//                             }
+//                             if (!musicFiles.empty()) {
+//                                 musicPath = musicFiles[0];
+//                                 if (musicStarted) {
+//                                     Mix_HaltMusic();
+//                                     musicStarted = false;
+//                                 }
+//                                 if (bgm) {
+//                                     Mix_FreeMusic(bgm);
+//                                 }
+//                                 bgm = Mix_LoadMUS(musicPath.c_str());
+//                                 if (trackText) SDL_DestroyTexture(trackText);
+//                                 currentTrack = fs::path(musicPath).filename().string();
+//                                 trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
+//                                 needsScrolling = currentTrack.length() > 15;
+//                                 textOffset = 0;
+//                                 if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+//                                 musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+//                                 totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+//                                 if (coverTexture) SDL_DestroyTexture(coverTexture);
+//                                 coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+//                                 if (fs::exists(coverPath)) {
+//                                     SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
+//                                     if (coverSurface) {
+//                                         coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+//                                         SDL_FreeSurface(coverSurface);
+//                                     }
+//                                 } else {
+//                                     coverTexture = nullptr;
+//                                 }
+//                             }
+//                             std::ofstream outFile("music_path.txt");
+//                             if (outFile.is_open()) {
+//                                 outFile << musicPath << "\n" << folderPath;
+//                                 outFile.close();
+//                             }
+//                         }
+//                     }
+//                     else if (MouseOnKnopka2) {
+//                         running = false;
+//                     }
+//                     else if (MouseOnKnopka11) {
+//                         if (Mix_PausedMusic()) {
+//                             Mix_ResumeMusic();
+//                         } else {
+//                             Mix_PauseMusic();
+//                         }
+//                     }
+//                     else if (MouseOnSlider) {
+//                         isDraggingSlider = true;
+//                     }
+//                     else if (MouseOnMusicScroll) {
+//                         isDraggingMusicScroll = true;
+//                     }
+//                     else if (MouseOnSliderTrack && bgm) {
+//                         double musicDuration = Mix_MusicDuration(bgm);
+//                         if (musicDuration > 0) {
+//                             float progress = static_cast<float>(mx - sliderTrack.x) / sliderTrack.w;
+//                             double newPosition = progress * musicDuration;
+//                             Mix_SetMusicPosition(newPosition);
+//                         }
+//                     }
+//                     else if (MouseOnCover) {
+//                         const char* selectedImage = tinyfd_openFileDialog("Выберите обложку", "", 0, nullptr, nullptr, 0);
+//                         if (selectedImage) {
+//                             SDL_Surface* newCoverSurface = IMG_Load(selectedImage);
+//                             if (newCoverSurface) {
+//                                 if (coverTexture) SDL_DestroyTexture(coverTexture);
+//                                 coverTexture = SDL_CreateTextureFromSurface(renderer, newCoverSurface);
+//                                 coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+//                                 IMG_SavePNG(newCoverSurface, coverPath.c_str());
+//                                 SDL_FreeSurface(newCoverSurface);
+//                             }
+//                         }
+//                     }
+//                     else {
+//                         for (size_t i = 0; i < musicSquares.size(); ++i) {
+//                             if (MouseOnMusicSquare[i] && i + musicScrollOffset < musicFiles.size()) {
+//                                 currentTrackIndex = i + musicScrollOffset;
+//                                 musicPath = musicFiles[currentTrackIndex];
+//                                 if (musicStarted) {
+//                                     Mix_HaltMusic();
+//                                     musicStarted = false;
+//                                 }
+//                                 if (bgm) {
+//                                     Mix_FreeMusic(bgm);
+//                                 }
+//                                 bgm = Mix_LoadMUS(musicPath.c_str());
+//                                 if (!bgm) {
+//                                     std::cerr << "Failed to load new bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+//                                 } else {
+//                                     if (Mix_PlayMusic(bgm, -1) == -1) {
+//                                         std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+//                                     } else {
+//                                         musicStarted = true;
+//                                     }
+//                                 }
+//                                 if (trackText) SDL_DestroyTexture(trackText);
+//                                 currentTrack = fs::path(musicPath).filename().string();
+//                                 trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
+//                                 needsScrolling = currentTrack.length() > 15;
+//                                 textOffset = 0;
+//                                 if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+//                                 musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+//                                 totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+//                                 if (coverTexture) SDL_DestroyTexture(coverTexture);
+//                                 coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+//                                 if (fs::exists(coverPath)) {
+//                                     SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
+//                                     if (coverSurface) {
+//                                         coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+//                                         SDL_FreeSurface(coverSurface);
+//                                     }
+//                                 } else {
+//                                     coverTexture = nullptr;
+//                                 }
+//                                 std::ofstream outFile("music_path.txt");
+//                                 if (outFile.is_open()) {
+//                                     outFile << musicPath << "\n" << folderPath;
+//                                     outFile.close();
+//                                 }
+//                                 break;
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//             else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
+//                 if (scene == 0) {
+//                     if (isDraggingSlider) {
+//                         isDraggingSlider = false;
+//                         if (bgm && musicStarted) {
+//                             double musicDuration = Mix_MusicDuration(bgm);
+//                             if (musicDuration > 0) {
+//                                 float progress = static_cast<float>(sliderHandle.x - sliderTrack.x) / (sliderTrack.w - sliderHandle.w);
+//                                 double newPosition = progress * musicDuration;
+//                                 Mix_SetMusicPosition(newPosition);
+//                             }
+//                         }
+//                     }
+//                     else if (isDraggingMusicScroll) {
+//                         isDraggingMusicScroll = false;
+//                     }
+//                 }
+//             }
+//             else if (event.type == SDL_MOUSEMOTION) {
+//                 if (scene == 0) {
+//                     if (isDraggingSlider) {
+//                         int newX = mx - sliderHandle.w / 2;
+//                         if (newX < sliderTrack.x) newX = sliderTrack.x;
+//                         if (newX > sliderTrack.x + sliderTrack.w - sliderHandle.w) newX = sliderTrack.x + sliderTrack.w - sliderHandle.w;
+//                         sliderHandle.x = newX;
+//                     }
+//                     else if (isDraggingMusicScroll && musicFiles.size() > maxVisibleSquares) {
+//                         int newY = my - musicScrollHandle.h / 2;
+//                         if (newY < musicScrollTrack.y) newY = musicScrollTrack.y;
+//                         if (newY > musicScrollTrack.y + musicScrollTrack.h - musicScrollHandle.h) newY = musicScrollTrack.y + musicScrollTrack.h - musicScrollHandle.h;
+//                         musicScrollHandle.y = newY;
+//                         float progress = static_cast<float>(musicScrollHandle.y - musicScrollTrack.y) / (musicScrollTrack.h - musicScrollHandle.h);
+//                         musicScrollOffset = static_cast<int>(progress * (musicFiles.size() - maxVisibleSquares));
+//                         musicSquares.clear();
+//                         for (size_t i = musicScrollOffset; i < musicFiles.size() && i < musicScrollOffset + maxVisibleSquares; ++i) {
+//                             musicSquares.push_back({650, static_cast<int>(50 + (i - musicScrollOffset) * 55), 140, 50});
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+
+//         SDL_RenderPresent(renderer);
+//         SDL_Delay(16);
+//     }
+
+//     if (bgm) Mix_FreeMusic(bgm);
+//     if (trackText) SDL_DestroyTexture(trackText);
+//     if (currentTimeText) SDL_DestroyTexture(currentTimeText);
+//     if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+//     if (hoverTimeText) SDL_DestroyTexture(hoverTimeText);
+//     if (coverTexture) SDL_DestroyTexture(coverTexture);
+//     for (auto& texture : musicFileTextures) {
+//         if (texture) SDL_DestroyTexture(texture);
+//     }
+//     SDL_DestroyRenderer(renderer);
+//     SDL_DestroyWindow(window);
+//     TTF_CloseFont(font);
+//     TTF_CloseFont(trackFont);
+//     TTF_CloseFont(titleFont);
+//     TTF_Quit();
+//     Mix_CloseAudio();
+//     IMG_Quit();
+//     SDL_Quit();
+//     return 0;
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_scancode.h>
@@ -262,40 +1206,56 @@
 #include <SDL2/SDL_ttf.h>
 #include <iostream>
 #include <vector>
-#include <string>
+#include <functional>
+#include <fstream>
 #include <filesystem>
-#include <algorithm>
+#include <string>
+#include "tinyfiledialogs.h"
 
 namespace fs = std::filesystem;
 
-// Функция для фильтрации текста
-std::string filterText(const std::string& text) {
-    std::string filtered;
-    for (char c : text) {
-        if (c >= 32 && c <= 126) filtered += c;
-    }
-    return filtered.empty() ? " " : filtered;
-}
+// Определение цветов
+SDL_Color bgColor = {28, 28, 28, 255};        // #1C1C1C
+SDL_Color buttonColor = {51, 51, 51, 255};    // #333333
+SDL_Color buttonHoverColor = {85, 85, 85, 255}; // #555555
+SDL_Color textColor = {255, 255, 255, 255};   // #FFFFFF
+SDL_Color shadowColor = {0, 0, 0, 128};       // Полупрозрачная тень
+SDL_Color sliderTrackColor = {68, 68, 68, 255}; // #444444
+SDL_Color sliderActiveColor = {102, 102, 102, 255}; // #666666
+SDL_Color sliderHandleColor = {255, 255, 255, 255}; // #FFFFFF
+SDL_Color borderColor = {0, 0, 0, 255};       // #000000
+SDL_Color pathColor = {100, 100, 100, 255};   // Серый для пути
+SDL_Color enemyColor = {255, 0, 0, 255};      // Красный для врагов
+SDL_Color towerColor = {0, 255, 0, 255};      // Зеленый для башен
 
-// Функция для рендеринга текста
+// Функция для рендеринга текста с обрезкой и сглаживанием
 SDL_Texture* createTextTexture(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, SDL_Color color, int maxWidth = -1) {
-    std::string filteredText = filterText(text);
-    if (filteredText.empty()) return nullptr;
-    std::string displayText = filteredText;
+    std::string displayText = text;
     if (maxWidth > 0) {
-        int textWidth;
-        if (TTF_SizeText(font, filteredText.c_str(), &textWidth, nullptr) > maxWidth) {
-            displayText = filteredText.substr(0, filteredText.find_last_of(' ', maxWidth / 10)) + "...";
+        int w;
+        TTF_SizeUTF8(font, text.c_str(), &w, nullptr);
+        if (w > maxWidth) {
+            displayText = text;
+            while (TTF_SizeUTF8(font, (displayText + "...").c_str(), &w, nullptr), w > maxWidth && !displayText.empty()) {
+                displayText.pop_back();
+            }
+            displayText += "...";
         }
     }
-    SDL_Surface* textSurface = TTF_RenderText_Blended(font, displayText.c_str(), color);
-    if (!textSurface) return nullptr;
+    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, displayText.c_str(), color);
+    if (!textSurface) {
+        std::cerr << "TTF_RenderUTF8_Blended Error: " << TTF_GetError() << std::endl;
+        return nullptr;
+    }
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
     SDL_FreeSurface(textSurface);
+    if (!textTexture) {
+        std::cerr << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
+    }
     return textTexture;
 }
 
-// Форматирование времени
+// Форматирование времени в MM:SS
 std::string formatTime(double seconds) {
     int totalSeconds = static_cast<int>(seconds);
     int minutes = totalSeconds / 60;
@@ -305,80 +1265,87 @@ std::string formatTime(double seconds) {
     return std::string(buffer);
 }
 
-// Структура трека
-struct Track {
-    std::string title;
-    std::string path;
-    std::string coverPath;
-    Mix_Music* music = nullptr;
-    double duration = 0.0;
+// Структура для врагов в Tower Defense
+struct Enemy {
+    float x, y;          // Позиция врага
+    float speed;         // Скорость движения
+    int health;          // Здоровье врага
+    int pathIndex;       // Текущая точка пути
+    bool active;         // Активен ли враг
 };
 
-// Функция для поиска MP3 в папке
-std::vector<Track> searchLocalTracks(const std::string& dir) {
-    std::vector<Track> tracks;
-    if (!fs::exists(dir)) {
-        std::cerr << "Directory does not exist: " << dir << std::endl;
-        return tracks;
-    }
-    for (const auto& entry : fs::directory_iterator(dir)) {
-        if (entry.path().extension() == ".mp3") {
-            Track track;
-            track.title = entry.path().filename().string().substr(0, entry.path().filename().string().size() - 4);
-            track.path = entry.path().string();
-            // Предполагаем, что обложка имеет то же имя с расширением .png/.jpg
-            std::string coverPath = entry.path().string().substr(0, entry.path().string().size() - 4) + ".png";
-            if (!fs::exists(coverPath)) coverPath = entry.path().string().substr(0, entry.path().string().size() - 4) + ".jpg";
-            if (fs::exists(coverPath)) track.coverPath = coverPath;
-            tracks.push_back(track);
-        }
-    }
-    return tracks;
+// Структура для башен в Tower Defense
+struct Tower {
+    int x, y;            // Позиция башни
+    int range;           // Радиус действия
+    int damage;          // Урон
+    float fireRate;      // Скорострельность (выстрелов в секунду)
+    float lastShot;      // Время последнего выстрела
+    bool active;         // Активна ли башня
+};
+
+// Проверка, находится ли точка (px, py) в радиусе действия башни
+bool inRange(Tower& tower, float px, float py) {
+    float dx = tower.x + 25 - px; // Центр башни (размер башни 50x50)
+    float dy = tower.y + 25 - py;
+    return sqrt(dx * dx + dy * dy) <= tower.range;
 }
 
 int main(int argc, char* argv[]) {
+    // Установка локали для поддержки UTF-8
+    SDL_SetMainReady();
+    setlocale(LC_ALL, "ru_RU.UTF-8");
+
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS) != 0) {
-        std::cerr << "SDL Error: " << SDL_GetError() << std::endl;
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+        std::cerr << "Ошибка инициализации SDL: " << SDL_GetError() << std::endl;
         return 1;
     }
 
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        std::cerr << "Mix Error: " << Mix_GetError() << std::endl;
+        std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << std::endl;
         SDL_Quit();
         return 1;
     }
 
-    int imgFlags = IMG_INIT_PNG | IMG_INIT_JPG;
+    int imgFlags = IMG_INIT_PNG;
     if (!(IMG_Init(imgFlags) & imgFlags)) {
-        std::cerr << "IMG Error: " << IMG_GetError() << std::endl;
+        std::cerr << "IMG_Init Error: " << IMG_GetError() << std::endl;
         SDL_Quit();
         return 1;
     }
 
     if (TTF_Init() == -1) {
-        std::cerr << "TTF Error: " << TTF_GetError() << std::endl;
+        std::cerr << "TTF_Init Error: " << TTF_GetError() << std::endl;
         IMG_Quit();
         SDL_Quit();
         return 1;
     }
 
-    TTF_Font* font = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSans.ttf", 20);
-    TTF_Font* trackFont = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSans.ttf", 40);
-    if (!font || !trackFont) {
-        std::cerr << "Font Error: " << TTF_GetError() << std::endl;
+    // Загрузка шрифта с поддержкой кириллицы
+    TTF_Font* font = TTF_OpenFont("arial.ttf", 20);
+    TTF_Font* trackFont = TTF_OpenFont("arial.ttf", 40);
+    TTF_Font* titleFont = TTF_OpenFont("arial.ttf", 48); // Шрифт для заголовка
+    if (!font || !trackFont || !titleFont) {
+        std::cerr << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
         TTF_Quit();
         IMG_Quit();
         SDL_Quit();
         return 1;
     }
 
-    SDL_Window* window = SDL_CreateWindow("Music Player", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 750, SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow(
+        "Музыкальный плеер",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        800, 750,
+        SDL_WINDOW_SHOWN
+    );
     if (!window) {
-        std::cerr << "Window Error: " << SDL_GetError() << std::endl;
+        std::cerr << "Ошибка создания окна: " << SDL_GetError() << std::endl;
         TTF_CloseFont(font);
         TTF_CloseFont(trackFont);
+        TTF_CloseFont(titleFont);
         TTF_Quit();
         IMG_Quit();
         SDL_Quit();
@@ -387,170 +1354,271 @@ int main(int argc, char* argv[]) {
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
-        std::cerr << "Renderer Error: " << SDL_GetError() << std::endl;
+        std::cerr << "Ошибка создания рендера: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
         TTF_CloseFont(font);
         TTF_CloseFont(trackFont);
+        TTF_CloseFont(titleFont);
         TTF_Quit();
         IMG_Quit();
         SDL_Quit();
         return 1;
     }
 
-    SDL_Color textColor = {255, 255, 255, 255};
+    std::string musicPath = "muzika.mp3";
+    std::string folderPath;
+    std::ifstream musicPathFile("music_path.txt");
+    if (musicPathFile.is_open()) {
+        std::getline(musicPathFile, musicPath);
+        std::getline(musicPathFile, folderPath);
+        musicPathFile.close();
+    }
 
-    // Выбор папки (простая имитация, можно заменить на диалог)
-    std::string musicDir = "/home/user/music"; // Замените на вашу папку
-    std::vector<Track> tracks = searchLocalTracks(musicDir);
+    Mix_Music* bgm = Mix_LoadMUS(musicPath.c_str());
+    if (!bgm) {
+        std::cerr << "Failed to load bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+    }
 
-    // Поисковая строка и кнопка "Найти"
-    SDL_Rect searchRect {10, 10, 650, 40};
-    SDL_Rect findButtonRect {670, 10, 120, 40};
-    std::string searchText = "";
-    bool isTyping = false;
-    bool isSearching = false;
-    Uint32 searchStartTime = 0;
-
-    // Индикатор загрузки
-    SDL_Rect loadingRect {10, 700, 40, 40};
-    int loadingAngle = 0;
-
+    std::vector<std::string> musicFiles;
     size_t currentTrackIndex = 0;
+    if (!folderPath.empty() && fs::exists(folderPath)) {
+        for (const auto& entry : fs::directory_iterator(folderPath)) {
+            if (entry.path().extension() == ".mp3" || entry.path().extension() == ".wav") {
+                musicFiles.push_back(entry.path().string());
+                if (entry.path().string() == musicPath) {
+                    currentTrackIndex = musicFiles.size() - 1;
+                }
+            }
+        }
+    }
+
+    // Определение кнопок для главного меню
+    SDL_Rect menuButton1 {300, 300, 200, 75}; // Начать
+    SDL_Rect menuButton2 {300, 400, 200, 75}; // Настройки
+    SDL_Rect menuButton3 {300, 500, 200, 75}; // Выход
+    SDL_Rect menuButton4 {300, 600, 200, 75}; // TowerDefens
+
+    // Определение кнопок для плеера
+    SDL_Rect knopka1 {0, 0, 200, 75};    // Выбор папки
+    SDL_Rect knopka2 {0, 75, 200, 75};   // Выход
+    SDL_Rect knopka11 {340, 550, 120, 75}; // Пауза
 
     // Ползунок перемотки
     SDL_Rect sliderTrack {300, 500, 200, 10};
     SDL_Rect sliderHandle {300, 495, 10, 20};
     bool isDraggingSlider = false;
 
-    // Ползунок громкости
-    SDL_Rect volumeTrack {500, 500, 200, 10};
-    SDL_Rect volumeHandle {500, 495, 10, 20};
-    bool isDraggingVolume = false;
-    int volume = MIX_MAX_VOLUME; // 0-128
-
-    // Ползунок прокрутки
-    SDL_Rect musicScrollTrack {750, 110, 10, 385};
-    SDL_Rect musicScrollHandle {750, 110, 10, 20};
+    // Ползунок прокрутки музыки
+    SDL_Rect musicScrollTrack {790, 50, 10, 385};
+    SDL_Rect musicScrollHandle {790, 50, 10, 20};
     bool isDraggingMusicScroll = false;
     int musicScrollOffset = 0;
     const int maxVisibleSquares = 7;
 
-    // Квадраты для треков
+    // Квадраты для музыкальных файлов
     std::vector<SDL_Rect> musicSquares;
+    for (size_t i = 0; i < musicFiles.size() && i < maxVisibleSquares; ++i) {
+        musicSquares.push_back({650, static_cast<int>(50 + i * 55), 140, 50});
+    }
 
-    // Текст трека
-    SDL_Texture* trackText = nullptr;
+    // Текстуры для названий файлов
+    std::vector<SDL_Texture*> musicFileTextures;
+    for (const auto& file : musicFiles) {
+        std::string filename = fs::path(file).filename().string();
+        SDL_Texture* textTexture = createTextTexture(renderer, font, filename, textColor, 130);
+        musicFileTextures.push_back(textTexture);
+    }
+
+    // Текст для трека
+    std::string currentTrack = fs::path(musicPath).filename().string();
+    SDL_Texture* trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
     int textOffset = 0;
     Uint32 lastTextUpdate = SDL_GetTicks();
-    bool needsScrolling = false;
+    bool needsScrolling = currentTrack.length() > 15;
 
-    // Время трека
+    // Текст для времени трека
     SDL_Texture* currentTimeText = nullptr;
     SDL_Texture* totalTimeText = nullptr;
     SDL_Texture* hoverTimeText = nullptr;
-    double musicDuration = 0.0;
+    double musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+    totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+    currentTimeText = createTextTexture(renderer, font, "00:00", textColor);
 
-    // Обложка
+    // Квадрат для обложки
+    SDL_Rect coverRect {300, 100, 200, 200};
     SDL_Texture* coverTexture = nullptr;
-    SDL_Rect coverRect {50, 100, 200, 200};
+    std::string coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+    if (fs::exists(coverPath)) {
+        SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
+        if (coverSurface) {
+            coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+            SDL_FreeSurface(coverSurface);
+        }
+    }
 
-    SDL_Rect cursorRect = {0, 0, 2, 2};
+    // Элементы для Tower Defense
+    // Путь для врагов (простая дорожка с поворотами)
+    std::vector<SDL_Point> enemyPath = {
+        {50, 50}, {700, 50}, {700, 300}, {50, 300}, {50, 550}, {700, 550}
+    };
+
+    // Враги
+    std::vector<Enemy> enemies;
+    Uint32 lastEnemySpawn = SDL_GetTicks();
+    const Uint32 enemySpawnInterval = 2000; // Спавн врага каждые 2 секунды
+
+    // Башни
+    std::vector<Tower> towers;
+    // Места для размещения башен (4 позиции)
+    std::vector<SDL_Rect> towerSpots = {
+        {200, 150, 50, 50}, {450, 150, 50, 50},
+        {200, 400, 50, 50}, {450, 400, 50, 50}
+    };
+    int playerHealth = 10;
+    int playerMoney = 100;
+    const int towerCost = 50; // Стоимость башни
+    SDL_Texture* healthText = nullptr;
+    SDL_Texture* moneyText = nullptr;
+    SDL_Rect backButton {650, 650, 120, 75}; // Кнопка "Назад" в Tower Defense
+
+    SDL_Rect KvadratNaCursore = {0, 0, 2, 2};
+    int scene = -1; // Начальная сцена — главное меню
     bool musicStarted = false;
     bool running = true;
-
-    SDL_StartTextInput();
 
     SDL_Event event;
     while (running) {
         int mx, my;
         SDL_GetMouseState(&mx, &my);
-        cursorRect.x = mx - cursorRect.w / 2;
-        cursorRect.y = my - cursorRect.h / 2;
+        KvadratNaCursore.x = mx - KvadratNaCursore.w / 2;
+        KvadratNaCursore.y = my - KvadratNaCursore.h / 2;
 
         const Uint8* keyState = SDL_GetKeyboardState(NULL);
-        if (keyState[SDL_SCANCODE_ESCAPE]) running = false;
-
-        bool MouseOnSearch = SDL_HasIntersection(&cursorRect, &searchRect);
-        bool MouseOnFindButton = SDL_HasIntersection(&cursorRect, &findButtonRect);
-        bool MouseOnSlider = SDL_HasIntersection(&cursorRect, &sliderHandle);
-        bool MouseOnSliderTrack = (mx >= sliderTrack.x && mx <= sliderTrack.x + sliderTrack.w && my >= sliderTrack.y && my <= sliderTrack.y + sliderTrack.h);
-        bool MouseOnVolume = SDL_HasIntersection(&cursorRect, &volumeHandle);
-        bool MouseOnVolumeTrack = (mx >= volumeTrack.x && mx <= volumeTrack.x + volumeTrack.w && my >= volumeTrack.y && my <= volumeTrack.y + volumeTrack.h);
-        bool MouseOnMusicScroll = SDL_HasIntersection(&cursorRect, &musicScrollHandle);
-
-        std::vector<bool> MouseOnMusicSquare(musicSquares.size(), false);
-        for (size_t i = 0; i < musicSquares.size(); ++i) {
-            MouseOnMusicSquare[i] = SDL_HasIntersection(&cursorRect, &musicSquares[i]);
-        }
-
-        if (isSearching) {
-            loadingAngle += 10;
-            if (loadingAngle >= 360) loadingAngle = 0;
-            Uint32 currentTime = SDL_GetTicks();
-            if (currentTime - searchStartTime > 1000) {
-                isSearching = false;
-                tracks.clear();
-                tracks = searchLocalTracks(musicDir);
-                musicSquares.clear();
-                for (size_t i = 0; i < tracks.size() && i < maxVisibleSquares; ++i) {
-                    musicSquares.push_back({400, static_cast<int>(110 + i * 55), 340, 50});
-                }
-                if (!tracks.empty()) {
-                    currentTrackIndex = 0;
-                    if (trackText) SDL_DestroyTexture(trackText);
-                    trackText = createTextTexture(renderer, trackFont, tracks[0].title, textColor);
-                    needsScrolling = tracks[0].title.length() > 15;
-                    textOffset = 0;
-                    if (tracks[0].music) Mix_FreeMusic(tracks[0].music);
-                    tracks[0].music = Mix_LoadMUS(tracks[0].path.c_str());
-                    if (tracks[0].music) {
-                        musicDuration = Mix_MusicDuration(tracks[0].music);
-                        Mix_VolumeMusic(volume);
-                        if (totalTimeText) SDL_DestroyTexture(totalTimeText);
-                        totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
-                    }
-                    if (coverTexture) SDL_DestroyTexture(coverTexture);
-                    if (!tracks[0].coverPath.empty()) {
-                        SDL_Surface* coverSurface = IMG_Load(tracks[0].coverPath.c_str());
-                        if (coverSurface) {
-                            coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
-                            SDL_FreeSurface(coverSurface);
-                        }
-                    }
+        if (keyState[SDL_SCANCODE_ESCAPE]) {
+            if (scene == -1) {
+                running = false; // Выйти из приложения из главного меню
+            } else {
+                scene = -1; // Вернуться в главное меню
+                // Сброс игры Tower Defense
+                if (scene == 1) {
+                    enemies.clear();
+                    towers.clear();
+                    playerHealth = 10;
+                    playerMoney = 100;
                 }
             }
         }
 
-        if (tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music && musicStarted && !isDraggingSlider) {
-            double currentPosition = Mix_GetMusicPosition(tracks[currentTrackIndex].music);
+        bool MouseOnKnopka1 = SDL_HasIntersection(&KvadratNaCursore, &knopka1);
+        bool MouseOnKnopka2 = SDL_HasIntersection(&KvadratNaCursore, &knopka2);
+        bool MouseOnKnopka11 = SDL_HasIntersection(&KvadratNaCursore, &knopka11);
+        bool MouseOnSlider = SDL_HasIntersection(&KvadratNaCursore, &sliderHandle);
+        bool MouseOnSliderTrack = (mx >= sliderTrack.x && mx <= sliderTrack.x + sliderTrack.w && my >= sliderTrack.y && my <= sliderTrack.y + sliderTrack.h);
+        bool MouseOnMusicScroll = SDL_HasIntersection(&KvadratNaCursore, &musicScrollHandle);
+        bool MouseOnCover = SDL_HasIntersection(&KvadratNaCursore, &coverRect);
+
+        // Определение наведения на кнопки главного меню
+        bool MouseOnMenuButton1 = SDL_HasIntersection(&KvadratNaCursore, &menuButton1);
+        bool MouseOnMenuButton2 = SDL_HasIntersection(&KvadratNaCursore, &menuButton2);
+        bool MouseOnMenuButton3 = SDL_HasIntersection(&KvadratNaCursore, &menuButton3);
+        bool MouseOnMenuButton4 = SDL_HasIntersection(&KvadratNaCursore, &menuButton4);
+
+        std::vector<bool> MouseOnMusicSquare(musicSquares.size(), false);
+        for (size_t i = 0; i < musicSquares.size(); ++i) {
+            MouseOnMusicSquare[i] = SDL_HasIntersection(&KvadratNaCursore, &musicSquares[i]);
+        }
+
+        // Логика Tower Defense
+        if (scene == 1) {
+            // Спавн врагов
+            Uint32 currentTime = SDL_GetTicks();
+            if (currentTime - lastEnemySpawn >= enemySpawnInterval && playerHealth > 0) {
+                Enemy enemy = {50.0f, 50.0f, 1.0f, 3, 0, true};
+                enemies.push_back(enemy);
+                lastEnemySpawn = currentTime;
+            }
+
+            // Движение врагов
+            for (auto& enemy : enemies) {
+                if (!enemy.active) continue;
+                if (enemy.pathIndex >= enemyPath.size() - 1) {
+                    // Враг достиг конца пути
+                    enemy.active = false;
+                    playerHealth--;
+                    if (playerHealth <= 0) {
+                        scene = -1; // Возврат в главное меню при проигрыше
+                        enemies.clear();
+                        towers.clear();
+                        playerHealth = 10;
+                        playerMoney = 100;
+                    }
+                    continue;
+                }
+
+                SDL_Point target = enemyPath[enemy.pathIndex + 1];
+                float dx = target.x - enemy.x;
+                float dy = target.y - enemy.y;
+                float distance = sqrt(dx * dx + dy * dy);
+                if (distance < enemy.speed) {
+                    enemy.pathIndex++;
+                } else {
+                    enemy.x += (dx / distance) * enemy.speed;
+                    enemy.y += (dy / distance) * enemy.speed;
+                }
+            }
+
+            // Атака башен
+            for (auto& tower : towers) {
+                if (!tower.active) continue;
+                if (currentTime - tower.lastShot >= 1000.0f / tower.fireRate) {
+                    for (auto& enemy : enemies) {
+                        if (!enemy.active) continue;
+                        if (inRange(tower, enemy.x, enemy.y)) {
+                            enemy.health -= tower.damage;
+                            tower.lastShot = currentTime;
+                            if (enemy.health <= 0) {
+                                enemy.active = false;
+                                playerMoney += 10; // Награда за убийство врага
+                            }
+                            break; // Атакуем только одного врага за раз
+                        }
+                    }
+                }
+            }
+
+            // Обновление текста здоровья и монет
+            if (healthText) SDL_DestroyTexture(healthText);
+            if (moneyText) SDL_DestroyTexture(moneyText);
+            healthText = createTextTexture(renderer, font, "Здоровье: " + std::to_string(playerHealth), textColor);
+            moneyText = createTextTexture(renderer, font, "Монеты: " + std::to_string(playerMoney), textColor);
+        }
+
+        if (bgm && musicStarted && !isDraggingSlider) {
+            double musicDuration = Mix_MusicDuration(bgm);
+            double currentPosition = Mix_GetMusicPosition(bgm);
             if (musicDuration > 0) {
-                float progress = currentPosition / musicDuration;
+                float progress = static_cast<float>(currentPosition) / musicDuration;
                 sliderHandle.x = sliderTrack.x + static_cast<int>(progress * (sliderTrack.w - sliderHandle.w));
             }
             if (currentTimeText) SDL_DestroyTexture(currentTimeText);
             currentTimeText = createTextTexture(renderer, font, formatTime(currentPosition), textColor);
         }
 
-        if (MouseOnSliderTrack && tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music) {
+        if (MouseOnSliderTrack && bgm) {
             if (hoverTimeText) SDL_DestroyTexture(hoverTimeText);
+            double musicDuration = Mix_MusicDuration(bgm);
             if (musicDuration > 0) {
-                float progress = (mx - sliderTrack.x) / static_cast<float>(sliderTrack.w);
+                float progress = static_cast<float>(mx - sliderTrack.x) / sliderTrack.w;
                 double hoverPosition = progress * musicDuration;
                 hoverTimeText = createTextTexture(renderer, font, formatTime(hoverPosition), textColor);
             }
-        } else if (hoverTimeText) {
-            SDL_DestroyTexture(hoverTimeText);
+        } else {
+            if (hoverTimeText) SDL_DestroyTexture(hoverTimeText);
             hoverTimeText = nullptr;
         }
 
-        if (MouseOnVolumeTrack) {
-            float progress = (mx - volumeTrack.x) / static_cast<float>(volumeTrack.w);
-            volume = static_cast<int>(progress * MIX_MAX_VOLUME);
-            Mix_VolumeMusic(volume);
-        }
-
-        if (!isDraggingMusicScroll && tracks.size() > maxVisibleSquares) {
-            float progress = static_cast<float>(musicScrollOffset) / (tracks.size() - maxVisibleSquares);
+        if (!isDraggingMusicScroll && musicFiles.size() > maxVisibleSquares) {
+            float progress = static_cast<float>(musicScrollOffset) / (musicFiles.size() - maxVisibleSquares);
             musicScrollHandle.y = musicScrollTrack.y + static_cast<int>(progress * (musicScrollTrack.h - musicScrollHandle.h));
         }
 
@@ -560,270 +1628,749 @@ int main(int argc, char* argv[]) {
                 textOffset++;
                 int textW, textH;
                 SDL_QueryTexture(trackText, nullptr, nullptr, &textW, &textH);
-                if (textOffset >= textW - 600) textOffset = 0;
+                if (textOffset >= textW - 300) {
+                    textOffset = 0;
+                }
                 lastTextUpdate = currentTime;
             }
         } else {
             textOffset = 0;
         }
 
-        SDL_SetRenderDrawColor(renderer, 123, 123, 123, 255);
+        // Очистка экрана
+        SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
         SDL_RenderClear(renderer);
 
-        // Поисковая строка
-        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
-        SDL_RenderFillRect(renderer, &searchRect);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderDrawRect(renderer, &searchRect);
-        if (!searchText.empty()) {
-            SDL_Texture* searchTextTexture = createTextTexture(renderer, font, searchText, textColor);
-            if (searchTextTexture) {
-                int textW, textH;
-                SDL_QueryTexture(searchTextTexture, nullptr, nullptr, &textW, &textH);
-                SDL_Rect textRect = {searchRect.x + 5, searchRect.y + (searchRect.h - textH) / 2, textW, textH};
-                SDL_RenderCopy(renderer, searchTextTexture, nullptr, &textRect);
-                SDL_DestroyTexture(searchTextTexture);
+        if (scene == -1) { // Главное меню
+            // Отрисовка заголовка
+            SDL_Texture* titleText = createTextTexture(renderer, titleFont, "Музыкальный плеер", textColor);
+            if (titleText) {
+                int tw, th;
+                SDL_QueryTexture(titleText, nullptr, nullptr, &tw, &th);
+                SDL_Rect tr = {400 - tw / 2, 150 - th / 2, tw, th};
+                SDL_Rect shadowTr = {tr.x + 3, tr.y + 3, tw, th};
+                SDL_SetTextureColorMod(titleText, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(titleText, shadowColor.a);
+                SDL_RenderCopy(renderer, titleText, nullptr, &shadowTr);
+                SDL_SetTextureColorMod(titleText, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(titleText, 255);
+                SDL_RenderCopy(renderer, titleText, nullptr, &tr);
+                SDL_DestroyTexture(titleText);
+            }
+
+            // Отрисовка кнопки "Начать"
+            SDL_SetRenderDrawColor(renderer, MouseOnMenuButton1 ? buttonHoverColor.r : buttonColor.r, MouseOnMenuButton1 ? buttonHoverColor.g : buttonColor.g, MouseOnMenuButton1 ? buttonHoverColor.b : buttonColor.b, 255);
+            SDL_RenderFillRect(renderer, &menuButton1);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &menuButton1);
+            SDL_Texture* btn1Text = createTextTexture(renderer, font, "Начать", textColor, 180);
+            if (btn1Text) {
+                int tw, th;
+                SDL_QueryTexture(btn1Text, nullptr, nullptr, &tw, &th);
+                SDL_Rect tr = {menuButton1.x + (menuButton1.w - tw) / 2, menuButton1.y + (menuButton1.h - th) / 2, tw, th};
+                SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+                SDL_SetTextureColorMod(btn1Text, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(btn1Text, shadowColor.a);
+                SDL_RenderCopy(renderer, btn1Text, nullptr, &shadowTr);
+                SDL_SetTextureColorMod(btn1Text, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(btn1Text, 255);
+                SDL_RenderCopy(renderer, btn1Text, nullptr, &tr);
+                SDL_DestroyTexture(btn1Text);
+            }
+
+            // Отрисовка кнопки "Настройки"
+            SDL_SetRenderDrawColor(renderer, MouseOnMenuButton2 ? buttonHoverColor.r : buttonColor.r, MouseOnMenuButton2 ? buttonHoverColor.g : buttonColor.g, MouseOnMenuButton2 ? buttonHoverColor.b : buttonColor.b, 255);
+            SDL_RenderFillRect(renderer, &menuButton2);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &menuButton2);
+            SDL_Texture* btn2Text = createTextTexture(renderer, font, "Настройки", textColor, 180);
+            if (btn2Text) {
+                int tw, th;
+                SDL_QueryTexture(btn2Text, nullptr, nullptr, &tw, &th);
+                SDL_Rect tr = {menuButton2.x + (menuButton2.w - tw) / 2, menuButton2.y + (menuButton2.h - th) / 2, tw, th};
+                SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+                SDL_SetTextureColorMod(btn2Text, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(btn2Text, shadowColor.a);
+                SDL_RenderCopy(renderer, btn2Text, nullptr, &shadowTr);
+                SDL_SetTextureColorMod(btn2Text, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(btn2Text, 255);
+                SDL_RenderCopy(renderer, btn2Text, nullptr, &tr);
+                SDL_DestroyTexture(btn2Text);
+            }
+
+            // Отрисовка кнопки "Выход"
+            SDL_SetRenderDrawColor(renderer, MouseOnMenuButton3 ? buttonHoverColor.r : buttonColor.r, MouseOnMenuButton3 ? buttonHoverColor.g : buttonColor.g, MouseOnMenuButton3 ? buttonHoverColor.b : buttonColor.b, 255);
+            SDL_RenderFillRect(renderer, &menuButton3);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &menuButton3);
+            SDL_Texture* btn3Text = createTextTexture(renderer, font, "Выход", textColor, 180);
+            if (btn3Text) {
+                int tw, th;
+                SDL_QueryTexture(btn3Text, nullptr, nullptr, &tw, &th);
+                SDL_Rect tr = {menuButton3.x + (menuButton3.w - tw) / 2, menuButton3.y + (menuButton3.h - th) / 2, tw, th};
+                SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+                SDL_SetTextureColorMod(btn3Text, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(btn3Text, shadowColor.a);
+                SDL_RenderCopy(renderer, btn3Text, nullptr, &shadowTr);
+                SDL_SetTextureColorMod(btn3Text, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(btn3Text, 255);
+                SDL_RenderCopy(renderer, btn3Text, nullptr, &tr);
+                SDL_DestroyTexture(btn3Text);
+            }
+
+            // Отрисовка кнопки "TowerDefens"
+            SDL_SetRenderDrawColor(renderer, MouseOnMenuButton4 ? buttonHoverColor.r : buttonColor.r, MouseOnMenuButton4 ? buttonHoverColor.g : buttonColor.g, MouseOnMenuButton4 ? buttonHoverColor.b : buttonColor.b, 255);
+            SDL_RenderFillRect(renderer, &menuButton4);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &menuButton4);
+            SDL_Texture* btn4Text = createTextTexture(renderer, font, "TowerDefens", textColor, 180);
+            if (btn4Text) {
+                int tw, th;
+                SDL_QueryTexture(btn4Text, nullptr, nullptr, &tw, &th);
+                SDL_Rect tr = {menuButton4.x + (menuButton4.w - tw) / 2, menuButton4.y + (menuButton4.h - th) / 2, tw, th};
+                SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+                SDL_SetTextureColorMod(btn4Text, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(btn4Text, shadowColor.a);
+                SDL_RenderCopy(renderer, btn4Text, nullptr, &shadowTr);
+                SDL_SetTextureColorMod(btn4Text, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(btn4Text, 255);
+                SDL_RenderCopy(renderer, btn4Text, nullptr, &tr);
+                SDL_DestroyTexture(btn4Text);
             }
         }
-
-        // Кнопка "Найти"
-        SDL_SetRenderDrawColor(renderer, MouseOnFindButton ? 170 : 255, MouseOnFindButton ? 170 : 0, MouseOnFindButton ? 255 : 100, 255);
-        SDL_RenderFillRect(renderer, &findButtonRect);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderDrawRect(renderer, &findButtonRect);
-        SDL_Texture* findText = createTextTexture(renderer, font, "Find", textColor);
-        if (findText) {
-            int textW, textH;
-            SDL_QueryTexture(findText, nullptr, nullptr, &textW, &textH);
-            SDL_Rect textRect = {findButtonRect.x + (findButtonRect.w - textW) / 2, findButtonRect.y + (findButtonRect.h - textH) / 2, textW, textH};
-            SDL_RenderCopy(renderer, findText, nullptr, &textRect);
-            SDL_DestroyTexture(findText);
-        }
-
-        // Индикатор загрузки
-        if (isSearching) {
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            int centerX = loadingRect.x + loadingRect.w / 2;
-            int centerY = loadingRect.y + loadingRect.h / 2;
-            int radius = loadingRect.w / 2;
-            for (int i = 0; i < 360; i += 45) {
-                int alpha = (loadingAngle + i) % 360;
-                int x = centerX + radius * cos(alpha * M_PI / 180.0);
-                int y = centerY + radius * sin(alpha * M_PI / 180.0);
-                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255 - (i / 2));
-                SDL_Rect dot = {x - 5, y - 5, 10, 10};
-                SDL_RenderFillRect(renderer, &dot);
-            }
-        }
-
-        // Обложка
-        if (coverTexture) {
-            SDL_RenderCopy(renderer, coverTexture, nullptr, &coverRect);
-        } else {
-            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        else if (scene == 0) { // Плеер
+            // Отрисовка обложки с тенью и рамкой
+            SDL_Rect shadowRect = {coverRect.x + 5, coverRect.y + 5, coverRect.w, coverRect.h};
+            SDL_SetRenderDrawColor(renderer, shadowColor.r, shadowColor.g, shadowColor.b, shadowColor.a);
+            SDL_RenderFillRect(renderer, &shadowRect);
+            SDL_SetRenderDrawColor(renderer, buttonColor.r, buttonColor.g, buttonColor.b, buttonColor.a);
             SDL_RenderFillRect(renderer, &coverRect);
-        }
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderDrawRect(renderer, &coverRect);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &coverRect);
+            if (coverTexture) {
+                SDL_RenderCopy(renderer, coverTexture, nullptr, &coverRect);
+            }
 
-        // Название трека посередине
-        if (trackText) {
-            int textW, textH;
-            SDL_QueryTexture(trackText, nullptr, nullptr, &textW, &textH);
-            SDL_Rect textRect = {(800 - textW) / 2 - textOffset, 350, textW, textH};
-            SDL_Rect clipRect = {(800 - 600) / 2, 350, 600, textH};
-            SDL_RenderSetClipRect(renderer, &clipRect);
-            SDL_RenderCopy(renderer, trackText, nullptr, &textRect);
-            SDL_RenderSetClipRect(renderer, nullptr);
-        }
+            // Отрисовка кнопок плеера
+            SDL_SetRenderDrawColor(renderer, MouseOnKnopka1 ? buttonHoverColor.r : buttonColor.r, MouseOnKnopka1 ? buttonHoverColor.g : buttonColor.g, MouseOnKnopka1 ? buttonHoverColor.b : buttonColor.b, 255);
+            SDL_RenderFillRect(renderer, &knopka1);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &knopka1);
+            SDL_Texture* btn1Text = createTextTexture(renderer, font, "Выбрать папку", textColor, 180);
+            if (btn1Text) {
+                int tw, th;
+                SDL_QueryTexture(btn1Text, nullptr, nullptr, &tw, &th);
+                SDL_Rect tr = {knopka1.x + (knopka1.w - tw) / 2, knopka1.y + (knopka1.h - th) / 2, tw, th};
+                SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+                SDL_SetTextureColorMod(btn1Text, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(btn1Text, shadowColor.a);
+                SDL_RenderCopy(renderer, btn1Text, nullptr, &shadowTr);
+                SDL_SetTextureColorMod(btn1Text, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(btn1Text, 255);
+                SDL_RenderCopy(renderer, btn1Text, nullptr, &tr);
+                SDL_DestroyTexture(btn1Text);
+            }
 
-        // Ползунок перемотки
-        int handlePos = sliderHandle.x - sliderTrack.x;
-        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-        SDL_Rect darkPart = {sliderTrack.x, sliderTrack.y, handlePos, sliderTrack.h};
-        SDL_RenderFillRect(renderer, &darkPart);
-        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
-        SDL_Rect lightPart = {sliderTrack.x + handlePos, sliderTrack.y, sliderTrack.w - handlePos, sliderTrack.h};
-        SDL_RenderFillRect(renderer, &lightPart);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderFillRect(renderer, &sliderHandle);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderDrawRect(renderer, &sliderHandle);
+            SDL_SetRenderDrawColor(renderer, MouseOnKnopka2 ? buttonHoverColor.r : buttonColor.r, MouseOnKnopka2 ? buttonHoverColor.g : buttonColor.g, MouseOnKnopka2 ? buttonHoverColor.b : buttonColor.b, 255);
+            SDL_RenderFillRect(renderer, &knopka2);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &knopka2);
+            SDL_Texture* btn2Text = createTextTexture(renderer, font, "Выход", textColor, 180);
+            if (btn2Text) {
+                int tw, th;
+                SDL_QueryTexture(btn2Text, nullptr, nullptr, &tw, &th);
+                SDL_Rect tr = {knopka2.x + (knopka2.w - tw) / 2, knopka2.y + (knopka2.h - th) / 2, tw, th};
+                SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+                SDL_SetTextureColorMod(btn2Text, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(btn2Text, shadowColor.a);
+                SDL_RenderCopy(renderer, btn2Text, nullptr, &shadowTr);
+                SDL_SetTextureColorMod(btn2Text, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(btn2Text, 255);
+                SDL_RenderCopy(renderer, btn2Text, nullptr, &tr);
+                SDL_DestroyTexture(btn2Text);
+            }
 
-        // Ползунок громкости
-        int volumePos = volumeHandle.x - volumeTrack.x;
-        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-        SDL_Rect darkVolumePart = {volumeTrack.x, volumeTrack.y, volumePos, volumeTrack.h};
-        SDL_RenderFillRect(renderer, &darkVolumePart);
-        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
-        SDL_Rect lightVolumePart = {volumeTrack.x + volumePos, volumeTrack.y, volumeTrack.w - volumePos, volumeTrack.h};
-        SDL_RenderFillRect(renderer, &lightVolumePart);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderFillRect(renderer, &volumeHandle);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderDrawRect(renderer, &volumeHandle);
+            SDL_SetRenderDrawColor(renderer, MouseOnKnopka11 ? buttonHoverColor.r : buttonColor.r, MouseOnKnopka11 ? buttonHoverColor.g : buttonColor.g, MouseOnKnopka11 ? buttonHoverColor.b : buttonColor.b, 255);
+            SDL_RenderFillRect(renderer, &knopka11);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &knopka11);
+            SDL_Texture* btn11Text = createTextTexture(renderer, font, Mix_PausedMusic() ? "Играть" : "Пауза", textColor, 100);
+            if (btn11Text) {
+                int tw, th;
+                SDL_QueryTexture(btn11Text, nullptr, nullptr, &tw, &th);
+                SDL_Rect tr = {knopka11.x + (knopka11.w - tw) / 2, knopka11.y + (knopka11.h - th) / 2, tw, th};
+                SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+                SDL_SetTextureColorMod(btn11Text, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(btn11Text, shadowColor.a);
+                SDL_RenderCopy(renderer, btn11Text, nullptr, &shadowTr);
+                SDL_SetTextureColorMod(btn11Text, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(btn11Text, 255);
+                SDL_RenderCopy(renderer, btn11Text, nullptr, &tr);
+                SDL_DestroyTexture(btn11Text);
+            }
 
-        // Время
-        if (currentTimeText) {
-            int textW, textH;
-            SDL_QueryTexture(currentTimeText, nullptr, nullptr, &textW, &textH);
-            SDL_Rect textRect = {sliderTrack.x - textW - 5, sliderTrack.y - textH / 2, textW, textH};
-            SDL_RenderCopy(renderer, currentTimeText, nullptr, &textRect);
-        }
-        if (totalTimeText) {
-            int textW, textH;
-            SDL_QueryTexture(totalTimeText, nullptr, nullptr, &textW, &textH);
-            SDL_Rect textRect = {sliderTrack.x + sliderTrack.w + 5, sliderTrack.y - textH / 2, textW, textH};
-            SDL_RenderCopy(renderer, totalTimeText, nullptr, &textRect);
-        }
+            // Отрисовка текста трека с тенью
+            if (trackText) {
+                int textW, textH;
+                SDL_QueryTexture(trackText, nullptr, nullptr, &textW, &textH);
+                SDL_Rect textRect = {300 - textOffset, 350, std::min(textW, 300), textH};
+                SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textRect.w, textRect.h};
+                SDL_Rect clipRect = {300, 350, 300, textH};
+                SDL_RenderSetClipRect(renderer, &clipRect);
+                SDL_SetTextureColorMod(trackText, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(trackText, shadowColor.a);
+                SDL_RenderCopy(renderer, trackText, nullptr, &shadowRect);
+                SDL_SetTextureColorMod(trackText, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(trackText, 255);
+                SDL_RenderCopy(renderer, trackText, nullptr, &textRect);
+                SDL_RenderSetClipRect(renderer, nullptr);
+            }
 
-        if (hoverTimeText) {
-            int textW, textH;
-            SDL_QueryTexture(hoverTimeText, nullptr, nullptr, &textW, &textH);
-            SDL_Rect textRect = {mx - textW / 2, my - textH - 5, textW, textH};
-            SDL_RenderCopy(renderer, hoverTimeText, nullptr, &textRect);
-        }
+            // Отрисовка ползунка перемотки
+            SDL_SetRenderDrawColor(renderer, sliderTrackColor.r, sliderTrackColor.g, sliderTrackColor.b, sliderTrackColor.a);
+            SDL_RenderFillRect(renderer, &sliderTrack);
+            int handlePos = sliderHandle.x - sliderTrack.x;
+            SDL_Rect activePart = {sliderTrack.x, sliderTrack.y, handlePos + sliderHandle.w / 2, sliderTrack.h};
+            SDL_SetRenderDrawColor(renderer, sliderActiveColor.r, sliderActiveColor.g, sliderActiveColor.b, sliderActiveColor.a);
+            SDL_RenderFillRect(renderer, &activePart);
+            SDL_SetRenderDrawColor(renderer, sliderHandleColor.r, sliderHandleColor.g, sliderHandleColor.b, sliderHandleColor.a);
+            SDL_RenderFillRect(renderer, &sliderHandle);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &sliderHandle);
 
-        // Ползунок прокрутки
-        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
-        SDL_RenderFillRect(renderer, &musicScrollTrack);
-        SDL_SetRenderDrawColor(renderer, MouseOnMusicScroll ? 200 : 100, 100, 255, 255);
-        SDL_RenderFillRect(renderer, &musicScrollHandle);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderDrawRect(renderer, &musicScrollHandle);
+            // Отрисовка времени трека с тенью
+            if (currentTimeText) {
+                int textW, textH;
+                SDL_QueryTexture(currentTimeText, nullptr, nullptr, &textW, &textH);
+                SDL_Rect textRect = {sliderTrack.x - textW - 5, sliderTrack.y - textH / 2, textW, textH};
+                SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+                SDL_SetTextureColorMod(currentTimeText, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(currentTimeText, shadowColor.a);
+                SDL_RenderCopy(renderer, currentTimeText, nullptr, &shadowRect);
+                SDL_SetTextureColorMod(currentTimeText, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(currentTimeText, 255);
+                SDL_RenderCopy(renderer, currentTimeText, nullptr, &textRect);
+            }
+            if (totalTimeText) {
+                int textW, textH;
+                SDL_QueryTexture(totalTimeText, nullptr, nullptr, &textW, &textH);
+                SDL_Rect textRect = {sliderTrack.x + sliderTrack.w + 5, sliderTrack.y - textH / 2, textW, textH};
+                SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+                SDL_SetTextureColorMod(totalTimeText, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(totalTimeText, shadowColor.a);
+                SDL_RenderCopy(renderer, totalTimeText, nullptr, &shadowRect);
+                SDL_SetTextureColorMod(totalTimeText, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(totalTimeText, 255);
+                SDL_RenderCopy(renderer, totalTimeText, nullptr, &textRect);
+            }
 
-        // Квадраты треков (справа)
-        for (size_t i = 0; i < musicSquares.size(); ++i) {
-            SDL_SetRenderDrawColor(renderer, MouseOnMusicSquare[i] ? 170 : 255, MouseOnMusicSquare[i] ? 170 : 0, MouseOnMusicSquare[i] ? 255 : 100, 255);
-            SDL_RenderFillRect(renderer, &musicSquares[i]);
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-            SDL_RenderDrawRect(renderer, &musicSquares[i]);
-            if (i + musicScrollOffset < tracks.size()) {
-                SDL_Texture* titleTexture = createTextTexture(renderer, font, tracks[i + musicScrollOffset].title, textColor, 300);
-                if (titleTexture) {
+            // Отрисовка времени при наведении
+            if (hoverTimeText) {
+                int textW, textH;
+                SDL_QueryTexture(hoverTimeText, nullptr, nullptr, &textW, &textH);
+                SDL_Rect textRect = {mx - textW / 2, my - textH - 5, textW, textH};
+                SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+                SDL_SetTextureColorMod(hoverTimeText, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(hoverTimeText, shadowColor.a);
+                SDL_RenderCopy(renderer, hoverTimeText, nullptr, &shadowRect);
+                SDL_SetTextureColorMod(hoverTimeText, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(hoverTimeText, 255);
+                SDL_RenderCopy(renderer, hoverTimeText, nullptr, &textRect);
+            }
+
+            // Отрисовка ползунка прокрутки
+            SDL_SetRenderDrawColor(renderer, sliderTrackColor.r, sliderTrackColor.g, sliderTrackColor.b, sliderTrackColor.a);
+            SDL_RenderFillRect(renderer, &musicScrollTrack);
+            SDL_SetRenderDrawColor(renderer, MouseOnMusicScroll ? sliderActiveColor.r : sliderHandleColor.r, MouseOnMusicScroll ? sliderActiveColor.g : sliderHandleColor.g, MouseOnMusicScroll ? sliderActiveColor.b : sliderHandleColor.b, 255);
+            SDL_RenderFillRect(renderer, &musicScrollHandle);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &musicScrollHandle);
+
+            // Отрисовка квадратов для музыкальных файлов
+            for (size_t i = 0; i < musicSquares.size(); ++i) {
+                SDL_SetRenderDrawColor(renderer, MouseOnMusicSquare[i] ? buttonHoverColor.r : buttonColor.r, MouseOnMusicSquare[i] ? buttonHoverColor.g : buttonColor.g, MouseOnMusicSquare[i] ? buttonHoverColor.b : buttonColor.b, 255);
+                SDL_RenderFillRect(renderer, &musicSquares[i]);
+                SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+                SDL_RenderDrawRect(renderer, &musicSquares[i]);
+                if (i + musicScrollOffset < musicFileTextures.size() && musicFileTextures[i + musicScrollOffset]) {
                     int textW, textH;
-                    SDL_QueryTexture(titleTexture, nullptr, nullptr, &textW, &textH);
+                    SDL_QueryTexture(musicFileTextures[i + musicScrollOffset], nullptr, nullptr, &textW, &textH);
                     SDL_Rect textRect = {musicSquares[i].x + 5, musicSquares[i].y + (musicSquares[i].h - textH) / 2, textW, textH};
-                    SDL_RenderCopy(renderer, titleTexture, nullptr, &textRect);
-                    SDL_DestroyTexture(titleTexture);
+                    SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+                    SDL_Rect clipRect = {musicSquares[i].x + 5, musicSquares[i].y, 130, musicSquares[i].h};
+                    SDL_RenderSetClipRect(renderer, &clipRect);
+                    SDL_SetTextureColorMod(musicFileTextures[i + musicScrollOffset], shadowColor.r, shadowColor.g, shadowColor.b);
+                    SDL_SetTextureAlphaMod(musicFileTextures[i + musicScrollOffset], shadowColor.a);
+                    SDL_RenderCopy(renderer, musicFileTextures[i + musicScrollOffset], nullptr, &shadowRect);
+                    SDL_SetTextureColorMod(musicFileTextures[i + musicScrollOffset], textColor.r, textColor.g, textColor.b);
+                    SDL_SetTextureAlphaMod(musicFileTextures[i + musicScrollOffset], 255);
+                    SDL_RenderCopy(renderer, musicFileTextures[i + musicScrollOffset], nullptr, &textRect);
+                    SDL_RenderSetClipRect(renderer, nullptr);
                 }
+            }
+        }
+        else if (scene == 1) { // Tower Defense
+            // Отрисовка пути врагов
+            SDL_SetRenderDrawColor(renderer, pathColor.r, pathColor.g, pathColor.b, pathColor.a);
+            for (size_t i = 0; i < enemyPath.size() - 1; ++i) {
+                SDL_RenderDrawLine(renderer, enemyPath[i].x, enemyPath[i].y, enemyPath[i + 1].x, enemyPath[i + 1].y);
+            }
+
+            // Отрисовка мест для башен
+            for (const auto& spot : towerSpots) {
+                bool occupied = false;
+                for (const auto& tower : towers) {
+                    if (tower.x == spot.x && tower.y == spot.y && tower.active) {
+                        occupied = true;
+                        break;
+                    }
+                }
+                SDL_SetRenderDrawColor(renderer, occupied ? towerColor.r : buttonColor.r, occupied ? towerColor.g : buttonColor.g, occupied ? towerColor.b : buttonColor.b, 255);
+                SDL_RenderFillRect(renderer, &spot);
+                SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+                SDL_RenderDrawRect(renderer, &spot);
+            }
+
+            // Отрисовка врагов
+            for (const auto& enemy : enemies) {
+                if (!enemy.active) continue;
+                SDL_Rect enemyRect = {static_cast<int>(enemy.x - 10), static_cast<int>(enemy.y - 10), 20, 20};
+                SDL_SetRenderDrawColor(renderer, enemyColor.r, enemyColor.g, enemyColor.b, enemyColor.a);
+                SDL_RenderFillRect(renderer, &enemyRect);
+            }
+
+            // Отрисовка радиуса действия башен
+            for (const auto& tower : towers) {
+                if (!tower.active) continue;
+                SDL_SetRenderDrawColor(renderer, towerColor.r, towerColor.g, towerColor.b, 50);
+                for (int i = 0; i < 360; i++) {
+                    float rad = i * M_PI / 180.0f;
+                    int x1 = tower.x + 25 + cos(rad) * tower.range;
+                    int y1 = tower.y + 25 + sin(rad) * tower.range;
+                    int x2 = tower.x + 25 + cos((i + 1) * M_PI / 180.0f) * tower.range;
+                    int y2 = tower.y + 25 + sin((i + 1) * M_PI / 180.0f) * tower.range;
+                    SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+                }
+            }
+
+            // Отрисовка здоровья и монет
+            if (healthText) {
+                int textW, textH;
+                SDL_QueryTexture(healthText, nullptr, nullptr, &textW, &textH);
+                SDL_Rect textRect = {10, 10, textW, textH};
+                SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+                SDL_SetTextureColorMod(healthText, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(healthText, shadowColor.a);
+                SDL_RenderCopy(renderer, healthText, nullptr, &shadowRect);
+                SDL_SetTextureColorMod(healthText, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(healthText, 255);
+                SDL_RenderCopy(renderer, healthText, nullptr, &textRect);
+            }
+            if (moneyText) {
+                int textW, textH;
+                SDL_QueryTexture(moneyText, nullptr, nullptr, &textW, &textH);
+                SDL_Rect textRect = {10, 40, textW, textH};
+                SDL_Rect shadowRect = {textRect.x + 2, textRect.y + 2, textW, textH};
+                SDL_SetTextureColorMod(moneyText, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(moneyText, shadowColor.a);
+                SDL_RenderCopy(renderer, moneyText, nullptr, &shadowRect);
+                SDL_SetTextureColorMod(moneyText, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(moneyText, 255);
+                SDL_RenderCopy(renderer, moneyText, nullptr, &textRect);
+            }
+
+            // Отрисовка кнопки "Назад"
+            bool MouseOnBackButton = SDL_HasIntersection(&KvadratNaCursore, &backButton);
+            SDL_SetRenderDrawColor(renderer, MouseOnBackButton ? buttonHoverColor.r : buttonColor.r, MouseOnBackButton ? buttonHoverColor.g : buttonColor.g, MouseOnBackButton ? buttonHoverColor.b : buttonColor.b, 255);
+            SDL_RenderFillRect(renderer, &backButton);
+            SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+            SDL_RenderDrawRect(renderer, &backButton);
+            SDL_Texture* backText = createTextTexture(renderer, font, "Назад", textColor, 100);
+            if (backText) {
+                int tw, th;
+                SDL_QueryTexture(backText, nullptr, nullptr, &tw, &th);
+                SDL_Rect tr = {backButton.x + (backButton.w - tw) / 2, backButton.y + (backButton.h - th) / 2, tw, th};
+                SDL_Rect shadowTr = {tr.x + 2, tr.y + 2, tw, th};
+                SDL_SetTextureColorMod(backText, shadowColor.r, shadowColor.g, shadowColor.b);
+                SDL_SetTextureAlphaMod(backText, shadowColor.a);
+                SDL_RenderCopy(renderer, backText, nullptr, &shadowTr);
+                SDL_SetTextureColorMod(backText, textColor.r, textColor.g, textColor.b);
+                SDL_SetTextureAlphaMod(backText, 255);
+                SDL_RenderCopy(renderer, backText, nullptr, &tr);
+                SDL_DestroyTexture(backText);
             }
         }
 
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) running = false;
+            if (event.type == SDL_QUIT) {
+                running = false;
+            }
             else if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_RETURN && isTyping) {
-                    isSearching = true;
-                    searchStartTime = SDL_GetTicks();
-                } else if (event.key.keysym.sym == SDLK_BACKSPACE && isTyping) {
-                    if (!searchText.empty()) searchText.pop_back();
-                } else if (event.key.keysym.sym == SDLK_SPACE && isTyping) {
-                    searchText += " ";
-                } else if (event.key.keysym.sym == SDLK_v && keyState[SDL_SCANCODE_LCTRL] && isTyping) {
-                    char* clipboardText = SDL_GetClipboardText();
-                    if (clipboardText) {
-                        searchText += filterText(clipboardText);
-                        SDL_free(clipboardText);
+                if (scene == 0) {
+                    if (event.key.keysym.sym == SDLK_1 && bgm && !musicStarted) {
+                        if (Mix_PlayMusic(bgm, -1) == -1) {
+                            std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+                        } else {
+                            musicStarted = true;
+                        }
                     }
-                } else if (event.key.keysym.sym == SDLK_LEFT && tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music) {
-                    double currentPosition = Mix_GetMusicPosition(tracks[currentTrackIndex].music);
-                    Mix_SetMusicPosition(std::max(0.0, currentPosition - 5.0));
-                } else if (event.key.keysym.sym == SDLK_RIGHT && tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music) {
-                    double currentPosition = Mix_GetMusicPosition(tracks[currentTrackIndex].music);
-                    Mix_SetMusicPosition(std::min(musicDuration, currentPosition + 5.0));
+                    else if (event.key.keysym.sym == SDLK_SPACE) {
+                        if (Mix_PausedMusic()) {
+                            Mix_ResumeMusic();
+                        } else {
+                            Mix_PauseMusic();
+                        }
+                    }
+                    else if (event.key.keysym.sym == SDLK_UP && !musicFiles.empty()) {
+                        if (currentTrackIndex > 0) {
+                            currentTrackIndex--;
+                        } else {
+                            currentTrackIndex = musicFiles.size() - 1;
+                        }
+                        musicPath = musicFiles[currentTrackIndex];
+                        if (musicStarted) {
+                            Mix_HaltMusic();
+                            musicStarted = false;
+                        }
+                        if (bgm) {
+                            Mix_FreeMusic(bgm);
+                        }
+                        bgm = Mix_LoadMUS(musicPath.c_str());
+                        if (!bgm) {
+                            std::cerr << "Failed to load new bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+                        } else {
+                            if (Mix_PlayMusic(bgm, -1) == -1) {
+                                std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+                            } else {
+                                musicStarted = true;
+                            }
+                        }
+                        if (trackText) SDL_DestroyTexture(trackText);
+                        currentTrack = fs::path(musicPath).filename().string();
+                        trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
+                        needsScrolling = currentTrack.length() > 15;
+                        textOffset = 0;
+                        if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+                        musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+                        totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+                        if (coverTexture) SDL_DestroyTexture(coverTexture);
+                        coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+                        if (fs::exists(coverPath)) {
+                            SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
+                            if (coverSurface) {
+                                coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+                                SDL_FreeSurface(coverSurface);
+                            }
+                        } else {
+                            coverTexture = nullptr;
+                        }
+                        std::ofstream outFile("music_path.txt");
+                        if (outFile.is_open()) {
+                            outFile << musicPath << "\n" << folderPath;
+                            outFile.close();
+                        }
+                    }
+                    else if (event.key.keysym.sym == SDLK_DOWN && !musicFiles.empty()) {
+                        if (currentTrackIndex < musicFiles.size() - 1) {
+                            currentTrackIndex++;
+                        } else {
+                            currentTrackIndex = 0;
+                        }
+                        musicPath = musicFiles[currentTrackIndex];
+                        if (musicStarted) {
+                            Mix_HaltMusic();
+                            musicStarted = false;
+                        }
+                        if (bgm) {
+                            Mix_FreeMusic(bgm);
+                        }
+                        bgm = Mix_LoadMUS(musicPath.c_str());
+                        if (!bgm) {
+                            std::cerr << "Failed to load new bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+                        } else {
+                            if (Mix_PlayMusic(bgm, -1) == -1) {
+                                std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
+                            } else {
+                                musicStarted = true;
+                            }
+                        }
+                        if (trackText) SDL_DestroyTexture(trackText);
+                        currentTrack = fs::path(musicPath).filename().string();
+                        trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
+                        needsScrolling = currentTrack.length() > 15;
+                        textOffset = 0;
+                        if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+                        musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+                        totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+                        if (coverTexture) SDL_DestroyTexture(coverTexture);
+                        coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+                        if (fs::exists(coverPath)) {
+                            SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
+                            if (coverSurface) {
+                                coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+                                SDL_FreeSurface(coverSurface);
+                            }
+                        } else {
+                            coverTexture = nullptr;
+                        }
+                        std::ofstream outFile("music_path.txt");
+                        if (outFile.is_open()) {
+                            outFile << musicPath << "\n" << folderPath;
+                            outFile.close();
+                        }
+                    }
+                    else if (event.key.keysym.sym == SDLK_LEFT && bgm && musicStarted) {
+                        double currentPosition = Mix_GetMusicPosition(bgm);
+                        double newPosition = std::max(0.0, currentPosition - 5.0);
+                        Mix_SetMusicPosition(newPosition);
+                    }
+                    else if (event.key.keysym.sym == SDLK_RIGHT && bgm && musicStarted) {
+                        double currentPosition = Mix_GetMusicPosition(bgm);
+                        double musicDuration = Mix_MusicDuration(bgm);
+                        double newPosition = std::min(musicDuration, currentPosition + 5.0);
+                        Mix_SetMusicPosition(newPosition);
+                    }
                 }
-            } else if (event.type == SDL_TEXTINPUT && isTyping) {
-                searchText += filterText(event.text.text);
-            } else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-                if (MouseOnSearch) isTyping = true;
-                else if (MouseOnFindButton) {
-                    isSearching = true;
-                    searchStartTime = SDL_GetTicks();
-                } else if (MouseOnSlider) isDraggingSlider = true;
-                else if (MouseOnVolume) isDraggingVolume = true;
-                else if (MouseOnMusicScroll) isDraggingMusicScroll = true;
-                else if (MouseOnSliderTrack && tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music) {
-                    if (musicDuration > 0) {
-                        float progress = (mx - sliderTrack.x) / static_cast<float>(sliderTrack.w);
-                        Mix_SetMusicPosition(progress * musicDuration);
+            }
+            else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+                if (scene == -1) {
+                    if (MouseOnMenuButton1) {
+                        scene = 0; // Переход к плееру
                     }
-                } else if (MouseOnVolumeTrack) {
-                    float progress = (mx - volumeTrack.x) / static_cast<float>(volumeTrack.w);
-                    volume = static_cast<int>(progress * MIX_MAX_VOLUME);
-                    Mix_VolumeMusic(volume);
-                } else {
-                    for (size_t i = 0; i < musicSquares.size(); ++i) {
-                        if (MouseOnMusicSquare[i] && i + musicScrollOffset < tracks.size()) {
-                            currentTrackIndex = i + musicScrollOffset;
-                            if (musicStarted) Mix_HaltMusic();
-                            if (tracks[currentTrackIndex].music) Mix_FreeMusic(tracks[currentTrackIndex].music);
-                            tracks[currentTrackIndex].music = Mix_LoadMUS(tracks[currentTrackIndex].path.c_str());
-                            if (tracks[currentTrackIndex].music) {
-                                musicDuration = Mix_MusicDuration(tracks[currentTrackIndex].music);
-                                Mix_VolumeMusic(volume);
+                    else if (MouseOnMenuButton2) {
+                        // Настройки (заглушка)
+                        std::cout << "Открыты настройки (функционал не реализован)" << std::endl;
+                    }
+                    else if (MouseOnMenuButton3) {
+                        running = false; // Выход из приложения
+                    }
+                    else if (MouseOnMenuButton4) {
+                        scene = 1; // Переход к Tower Defense
+                        enemies.clear();
+                        towers.clear();
+                        playerHealth = 10;
+                        playerMoney = 100;
+                    }
+                }
+                else if (scene == 0) {
+                    if (MouseOnKnopka1) {
+                        const char* selectedFolder = tinyfd_selectFolderDialog("Выберите папку с музыкой", "");
+                        if (selectedFolder) {
+                            folderPath = selectedFolder;
+                            musicFiles.clear();
+                            musicSquares.clear();
+                            for (auto& texture : musicFileTextures) {
+                                if (texture) SDL_DestroyTexture(texture);
+                            }
+                            musicFileTextures.clear();
+                            currentTrackIndex = 0;
+                            for (const auto& entry : fs::directory_iterator(folderPath)) {
+                                if (entry.path().extension() == ".mp3" || entry.path().extension() == ".wav") {
+                                    musicFiles.push_back(entry.path().string());
+                                    std::string filename = fs::path(entry.path()).filename().string();
+                                    SDL_Texture* textTexture = createTextTexture(renderer, font, filename, textColor, 130);
+                                    musicFileTextures.push_back(textTexture);
+                                }
+                            }
+                            musicScrollOffset = 0;
+                            musicSquares.clear();
+                            for (size_t i = 0; i < musicFiles.size() && i < maxVisibleSquares; ++i) {
+                                musicSquares.push_back({650, static_cast<int>(50 + i * 55), 140, 50});
+                            }
+                            if (!musicFiles.empty()) {
+                                musicPath = musicFiles[0];
+                                if (musicStarted) {
+                                    Mix_HaltMusic();
+                                    musicStarted = false;
+                                }
+                                if (bgm) {
+                                    Mix_FreeMusic(bgm);
+                                }
+                                bgm = Mix_LoadMUS(musicPath.c_str());
                                 if (trackText) SDL_DestroyTexture(trackText);
-                                trackText = createTextTexture(renderer, trackFont, tracks[currentTrackIndex].title, textColor);
-                                needsScrolling = tracks[currentTrackIndex].title.length() > 15;
+                                currentTrack = fs::path(musicPath).filename().string();
+                                trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
+                                needsScrolling = currentTrack.length() > 15;
                                 textOffset = 0;
                                 if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+                                musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
                                 totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
                                 if (coverTexture) SDL_DestroyTexture(coverTexture);
-                                if (!tracks[currentTrackIndex].coverPath.empty()) {
-                                    SDL_Surface* coverSurface = IMG_Load(tracks[currentTrackIndex].coverPath.c_str());
+                                coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+                                if (fs::exists(coverPath)) {
+                                    SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
                                     if (coverSurface) {
                                         coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
                                         SDL_FreeSurface(coverSurface);
                                     }
+                                } else {
+                                    coverTexture = nullptr;
                                 }
-                                if (!musicStarted) {
-                                    if (Mix_PlayMusic(tracks[currentTrackIndex].music, -1) == -1) {
-                                        std::cerr << "Play Error: " << Mix_GetError() << std::endl;
+                            }
+                            std::ofstream outFile("music_path.txt");
+                            if (outFile.is_open()) {
+                                outFile << musicPath << "\n" << folderPath;
+                                outFile.close();
+                            }
+                        }
+                    }
+                    else if (MouseOnKnopka2) {
+                        running = false;
+                    }
+                    else if (MouseOnKnopka11) {
+                        if (Mix_PausedMusic()) {
+                            Mix_ResumeMusic();
+                        } else {
+                            Mix_PauseMusic();
+                        }
+                    }
+                    else if (MouseOnSlider) {
+                        isDraggingSlider = true;
+                    }
+                    else if (MouseOnMusicScroll) {
+                        isDraggingMusicScroll = true;
+                    }
+                    else if (MouseOnSliderTrack && bgm) {
+                        double musicDuration = Mix_MusicDuration(bgm);
+                        if (musicDuration > 0) {
+                            float progress = static_cast<float>(mx - sliderTrack.x) / sliderTrack.w;
+                            double newPosition = progress * musicDuration;
+                            Mix_SetMusicPosition(newPosition);
+                        }
+                    }
+                    else if (MouseOnCover) {
+                        const char* selectedImage = tinyfd_openFileDialog("Выберите обложку", "", 0, nullptr, nullptr, 0);
+                        if (selectedImage) {
+                            SDL_Surface* newCoverSurface = IMG_Load(selectedImage);
+                            if (newCoverSurface) {
+                                if (coverTexture) SDL_DestroyTexture(coverTexture);
+                                coverTexture = SDL_CreateTextureFromSurface(renderer, newCoverSurface);
+                                coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+                                IMG_SavePNG(newCoverSurface, coverPath.c_str());
+                                SDL_FreeSurface(newCoverSurface);
+                            }
+                        }
+                    }
+                    else {
+                        for (size_t i = 0; i < musicSquares.size(); ++i) {
+                            if (MouseOnMusicSquare[i] && i + musicScrollOffset < musicFiles.size()) {
+                                currentTrackIndex = i + musicScrollOffset;
+                                musicPath = musicFiles[currentTrackIndex];
+                                if (musicStarted) {
+                                    Mix_HaltMusic();
+                                    musicStarted = false;
+                                }
+                                if (bgm) {
+                                    Mix_FreeMusic(bgm);
+                                }
+                                bgm = Mix_LoadMUS(musicPath.c_str());
+                                if (!bgm) {
+                                    std::cerr << "Failed to load new bgm! SDL_mixer Error: " << Mix_GetError() << std::endl;
+                                } else {
+                                    if (Mix_PlayMusic(bgm, -1) == -1) {
+                                        std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;
                                     } else {
                                         musicStarted = true;
                                     }
                                 }
+                                if (trackText) SDL_DestroyTexture(trackText);
+                                currentTrack = fs::path(musicPath).filename().string();
+                                trackText = createTextTexture(renderer, trackFont, currentTrack.length() > 15 ? currentTrack.substr(0, 15) + "..." : currentTrack, textColor);
+                                needsScrolling = currentTrack.length() > 15;
+                                textOffset = 0;
+                                if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+                                musicDuration = bgm ? Mix_MusicDuration(bgm) : 0.0;
+                                totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+                                if (coverTexture) SDL_DestroyTexture(coverTexture);
+                                coverPath = "cover_" + fs::path(musicPath).stem().string() + ".png";
+                                if (fs::exists(coverPath)) {
+                                    SDL_Surface* coverSurface = IMG_Load(coverPath.c_str());
+                                    if (coverSurface) {
+                                        coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+                                        SDL_FreeSurface(coverSurface);
+                                    }
+                                } else {
+                                    coverTexture = nullptr;
+                                }
+                                std::ofstream outFile("music_path.txt");
+                                if (outFile.is_open()) {
+                                    outFile << musicPath << "\n" << folderPath;
+                                    outFile.close();
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }
-            } else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
-                if (isDraggingSlider) {
-                    isDraggingSlider = false;
-                    if (tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music && musicStarted) {
-                        if (musicDuration > 0) {
-                            float progress = (sliderHandle.x - sliderTrack.x) / static_cast<float>(sliderTrack.w - sliderHandle.w);
-                            Mix_SetMusicPosition(progress * musicDuration);
+                else if (scene == 1) {
+                    bool MouseOnBackButton = SDL_HasIntersection(&KvadratNaCursore, &backButton);
+                    if (MouseOnBackButton) {
+                        scene = -1; // Возврат в главное меню
+                        enemies.clear();
+                        towers.clear();
+                        playerHealth = 10;
+                        playerMoney = 100;
+                    }
+                    else {
+                        // Размещение башен
+                        for (const auto& spot : towerSpots) {
+                            if (SDL_HasIntersection(&KvadratNaCursore, &spot)) {
+                                bool occupied = false;
+                                for (const auto& tower : towers) {
+                                    if (tower.x == spot.x && tower.y == spot.y && tower.active) {
+                                        occupied = true;
+                                        break;
+                                    }
+                                }
+                                if (!occupied && playerMoney >= towerCost) {
+                                    Tower tower = {spot.x, spot.y, 100, 1, 2.0f, 0.0f, true};
+                                    towers.push_back(tower);
+                                    playerMoney -= towerCost;
+                                }
+                                break;
+                            }
                         }
                     }
-                } else if (isDraggingVolume) {
-                    isDraggingVolume = false;
-                } else if (isDraggingMusicScroll) isDraggingMusicScroll = false;
-            } else if (event.type == SDL_MOUSEMOTION) {
-                if (isDraggingSlider) {
-                    int newX = mx - sliderHandle.w / 2;
-                    sliderHandle.x = std::max(sliderTrack.x, std::min(newX, sliderTrack.x + sliderTrack.w - sliderHandle.w));
-                } else if (isDraggingVolume) {
-                    int newX = mx - volumeHandle.w / 2;
-                    volumeHandle.x = std::max(volumeTrack.x, std::min(newX, volumeTrack.x + volumeTrack.w - volumeHandle.w));
-                    float progress = (volumeHandle.x - volumeTrack.x) / static_cast<float>(volumeTrack.w - volumeHandle.w);
-                    volume = static_cast<int>(progress * MIX_MAX_VOLUME);
-                    Mix_VolumeMusic(volume);
-                } else if (isDraggingMusicScroll && tracks.size() > maxVisibleSquares) {
-                    int newY = my - musicScrollHandle.h / 2;
-                    musicScrollHandle.y = std::max(musicScrollTrack.y, std::min(newY, musicScrollTrack.y + musicScrollTrack.h - musicScrollHandle.h));
-                    float progress = (musicScrollHandle.y - musicScrollTrack.y) / static_cast<float>(musicScrollTrack.h - musicScrollHandle.h);
-                    musicScrollOffset = static_cast<int>(progress * (tracks.size() - maxVisibleSquares));
-                    musicSquares.clear();
-                    for (size_t i = musicScrollOffset; i < tracks.size() && i < musicScrollOffset + maxVisibleSquares; ++i) {
-                        musicSquares.push_back({400, static_cast<int>(110 + (i - musicScrollOffset) * 55), 340, 50});
+                }
+            }
+            else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
+                if (scene == 0) {
+                    if (isDraggingSlider) {
+                        isDraggingSlider = false;
+                        if (bgm && musicStarted) {
+                            double musicDuration = Mix_MusicDuration(bgm);
+                            if (musicDuration > 0) {
+                                float progress = static_cast<float>(sliderHandle.x - sliderTrack.x) / (sliderTrack.w - sliderHandle.w);
+                                double newPosition = progress * musicDuration;
+                                Mix_SetMusicPosition(newPosition);
+                            }
+                        }
+                    }
+                    else if (isDraggingMusicScroll) {
+                        isDraggingMusicScroll = false;
                     }
                 }
-            } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE) {
-                if (tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music) {
-                    if (Mix_PausedMusic()) Mix_ResumeMusic();
-                    else Mix_PauseMusic();
+            }
+            else if (event.type == SDL_MOUSEMOTION) {
+                if (scene == 0) {
+                    if (isDraggingSlider) {
+                        int newX = mx - sliderHandle.w / 2;
+                        if (newX < sliderTrack.x) newX = sliderTrack.x;
+                        if (newX > sliderTrack.x + sliderTrack.w - sliderHandle.w) newX = sliderTrack.x + sliderTrack.w - sliderHandle.w;
+                        sliderHandle.x = newX;
+                    }
+                    else if (isDraggingMusicScroll && musicFiles.size() > maxVisibleSquares) {
+                        int newY = my - musicScrollHandle.h / 2;
+                        if (newY < musicScrollTrack.y) newY = musicScrollTrack.y;
+                        if (newY > musicScrollTrack.y + musicScrollTrack.h - musicScrollHandle.h) newY = musicScrollTrack.y + musicScrollTrack.h - musicScrollHandle.h;
+                        musicScrollHandle.y = newY;
+                        float progress = static_cast<float>(musicScrollHandle.y - musicScrollTrack.y) / (musicScrollTrack.h - musicScrollHandle.h);
+                        musicScrollOffset = static_cast<int>(progress * (musicFiles.size() - maxVisibleSquares));
+                        musicSquares.clear();
+                        for (size_t i = musicScrollOffset; i < musicFiles.size() && i < musicScrollOffset + maxVisibleSquares; ++i) {
+                            musicSquares.push_back({650, static_cast<int>(50 + (i - musicScrollOffset) * 55), 140, 50});
+                        }
+                    }
                 }
             }
         }
@@ -832,18 +2379,22 @@ int main(int argc, char* argv[]) {
         SDL_Delay(16);
     }
 
-    for (auto& track : tracks) {
-        if (track.music) Mix_FreeMusic(track.music);
-    }
+    if (bgm) Mix_FreeMusic(bgm);
     if (trackText) SDL_DestroyTexture(trackText);
     if (currentTimeText) SDL_DestroyTexture(currentTimeText);
     if (totalTimeText) SDL_DestroyTexture(totalTimeText);
     if (hoverTimeText) SDL_DestroyTexture(hoverTimeText);
     if (coverTexture) SDL_DestroyTexture(coverTexture);
+    if (healthText) SDL_DestroyTexture(healthText);
+    if (moneyText) SDL_DestroyTexture(moneyText);
+    for (auto& texture : musicFileTextures) {
+        if (texture) SDL_DestroyTexture(texture);
+    }
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     TTF_CloseFont(font);
     TTF_CloseFont(trackFont);
+    TTF_CloseFont(titleFont);
     TTF_Quit();
     Mix_CloseAudio();
     IMG_Quit();
