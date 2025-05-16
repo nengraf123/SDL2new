@@ -6,7 +6,17 @@
 # g++ -std=c++17 src/main.cpp -o bin/app -lSDL2 -lSDL2_mixer -lSDL2_image -lSDL2_ttf 
 # g++ src/main.cpp src/tinyfiledialogs.c -o bin/app \
 # 	-lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
+# all:
+# 	g++ src/main.cpp src/tinyfiledialogs.c -o bin/app -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
+# 	./bin/app
+
+CC = g++
+CFLAGS = -std=c++17 -I/usr/include -Iinclude
+LDFLAGS = -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
+
 all:
-	all:
-	g++ src/main.cpp src/tinyfiledialogs.c -o bin/app -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
-	./bin/app
+	src/main.cpp src/tinyfiledialogs.c
+	$(CC) $(CFLAGS) src/main.cpp src/tinyfiledialogs.c -o bin/app $(LDFLAGS)
+
+clean:
+	rm -f bin/app
