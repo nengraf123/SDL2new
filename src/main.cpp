@@ -262,25 +262,29 @@
 #include <SDL2/SDL_ttf.h>
 #include <iostream>
 #include <vector>
-#include <functional>
-#include <fstream>
-#include <filesystem>
 #include <string>
-#include "tinyfiledialogs.h"
+#include <curl/curl.h>
 #include <nlohmann/json.hpp>
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
+// Коллбэк для обработки ответа от curl
+static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* s) {
+    size_t newLength = size * nmemb;
+    s->append((char*)contents, newLength);
+    return newLength;
+}
+
 // Функция для фильтрации текста (оставляем только ASCII символы)
 std::string filterText(const std::string& text) {
     std::string filtered;
     for (char c : text) {
-        if (c >= 32 && c <= 126) { // ASCII printable characters
+        if (c >= 32 && c <= 126) {
             filtered += c;
         }
     }
-    return filtered.empty() ? " " : filtered; // Если строка пустая после фильтрации, возвращаем пробел
+    return filtered.empty() ? " " : filtered;
 }
 
 // Функция для рендеринга текста с обрезкой и сглаживанием
@@ -333,48 +337,55 @@ struct Track {
     double duration = 0.0;
 };
 
-// Функция для вызова Python-скрипта и получения списка треков
+// Функция для получения списка треков через VK API
 std::vector<Track> fetchVKTracks(const std::string& query) {
     std::vector<Track> tracks;
-    // Замените login и password на ваши данные VK
-    std::string login = "your_vk_login"; // Ваш логин VK
-    std::string password = "your_vk_password"; // Ваш пароль VK
-    std::string command = "python3 vk_music.py \"" + login + "\" \"" + password + "\" \"" + query + "\"";
-    FILE* pipe = popen(command.c_str(), "r");
-    if (!pipe) {
-        std::cerr << "Ошибка выполнения Python-скрипта" << std::endl;
-        return tracks;
-    }
+    CURL* curl;
+    CURLcode res;
+    std::string readBuffer;
 
-    std::string result;
-    char buffer[128];
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-        result += buffer;
-    }
-    pclose(pipe);
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if (curl) {
+        std::string access_token = "your_vk_access_token"; // Замените на ваш токен
+        std::string url = "https://api.vk.com/method/audio.search?q=" + curl_easy_escape(curl, query.c_str(), 0) +
+                         "&count=10&v=5.131&access_token=" + access_token;
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 
-    try {
-        json j = json::parse(result);
-        for (const auto& item : j) {
-            Track track;
-            track.title = item["title"].get<std::string>();
-            track.url = item["url"].get<std::string>();
-            track.duration = item["duration"].get<double>();
-            tracks.push_back(track);
+        res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        } else {
+            try {
+                json j = json::parse(readBuffer);
+                if (j.contains("response") && j["response"].contains("items")) {
+                    for (const auto& item : j["response"]["items"]) {
+                        Track track;
+                        track.title = item["artist"].get<std::string>() + " - " + item["title"].get<std::string>();
+                        track.url = item["url"].get<std::string>();
+                        track.duration = item["duration"].get<double>();
+                        tracks.push_back(track);
+                    }
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Ошибка парсинга JSON: " << e.what() << std::endl;
+            }
         }
-    } catch (const std::exception& e) {
-        std::cerr << "Ошибка парсинга JSON: " << e.what() << std::endl;
+        curl_easy_cleanup(curl);
     }
-
+    curl_global_cleanup();
     return tracks;
 }
 
 // Функция для скачивания трека
 std::string downloadTrack(const std::string& url, const std::string& title) {
-    std::string command = "curl -o \"" + title + ".mp3\" \"" + url + "\"";
+    std::string filename = title + ".mp3";
+    std::string command = "curl -o \"" + filename + "\" \"" + url + "\"";
     system(command.c_str());
-    if (fs::exists(title + ".mp3")) {
-        return title + ".mp3";
+    if (fs::exists(filename)) {
+        return filename;
     }
     return "";
 }
@@ -504,9 +515,6 @@ int main(int argc, char* argv[]) {
 
     // Квадраты для треков
     std::vector<SDL_Rect> musicSquares;
-    for (size_t i = 0; i < vkTracks.size() && i < maxVisibleSquares; ++i) {
-        musicSquares.push_back({150, static_cast<int>(110 + i * 55), 640, 50});
-    }
 
     // Текст для текущего трека
     SDL_Texture* trackText = nullptr;
