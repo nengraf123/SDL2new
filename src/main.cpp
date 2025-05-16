@@ -263,28 +263,16 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <curl/curl.h>
-#include <nlohmann/json.hpp>
 #include <filesystem>
-#include <regex>
+#include <algorithm>
 
 namespace fs = std::filesystem;
-using json = nlohmann::json;
-
-// Коллбэк для обработки ответа от curl
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* s) {
-    size_t newLength = size * nmemb;
-    s->append((char*)contents, newLength);
-    return newLength;
-}
 
 // Функция для фильтрации текста
 std::string filterText(const std::string& text) {
     std::string filtered;
     for (char c : text) {
-        if (c >= 32 && c <= 126) {
-            filtered += c;
-        }
+        if (c >= 32 && c <= 126) filtered += c;
     }
     return filtered.empty() ? " " : filtered;
 }
@@ -320,64 +308,32 @@ std::string formatTime(double seconds) {
 // Структура трека
 struct Track {
     std::string title;
-    std::string videoId;
     std::string path;
+    std::string coverPath;
     Mix_Music* music = nullptr;
     double duration = 0.0;
 };
 
-// Функция для поиска треков через YouTube Data API
-std::vector<Track> fetchYouTubeTracks(const std::string& query) {
+// Функция для поиска MP3 в папке
+std::vector<Track> searchLocalTracks(const std::string& dir) {
     std::vector<Track> tracks;
-    CURL* curl;
-    CURLcode res;
-    std::string readBuffer;
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl = curl_easy_init();
-    if (curl) {
-        std::string api_key = "ваш_youtube_api_key"; // Замените на ваш API-ключ
-        std::string url = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=" +
-                          curl_easy_escape(curl, query.c_str(), 0) + "&type=video&key=" + api_key;
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-
-        res = curl_easy_perform(curl);
-        if (res != CURLE_OK) {
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-        } else {
-            try {
-                json j = json::parse(readBuffer);
-                if (j.contains("items")) {
-                    for (const auto& item : j["items"]) {
-                        Track track;
-                        track.title = item["snippet"]["title"].get<std::string>();
-                        track.videoId = item["id"]["videoId"].get<std::string>();
-                        tracks.push_back(track);
-                    }
-                }
-            } catch (const std::exception& e) {
-                std::cerr << "JSON parsing error: " << e.what() << std::endl;
-            }
-        }
-        curl_easy_cleanup(curl);
+    if (!fs::exists(dir)) {
+        std::cerr << "Directory does not exist: " << dir << std::endl;
+        return tracks;
     }
-    curl_global_cleanup();
+    for (const auto& entry : fs::directory_iterator(dir)) {
+        if (entry.path().extension() == ".mp3") {
+            Track track;
+            track.title = entry.path().filename().string().substr(0, entry.path().filename().string().size() - 4);
+            track.path = entry.path().string();
+            // Предполагаем, что обложка имеет то же имя с расширением .png/.jpg
+            std::string coverPath = entry.path().string().substr(0, entry.path().string().size() - 4) + ".png";
+            if (!fs::exists(coverPath)) coverPath = entry.path().string().substr(0, entry.path().string().size() - 4) + ".jpg";
+            if (fs::exists(coverPath)) track.coverPath = coverPath;
+            tracks.push_back(track);
+        }
+    }
     return tracks;
-}
-
-// Функция для загрузки аудио с YouTube
-std::string downloadYouTubeTrack(const std::string& videoId, const std::string& title) {
-    std::string safeTitle = title;
-    std::replace(safeTitle.begin(), safeTitle.end(), ' ', '_');
-    std::replace(safeTitle.begin(), safeTitle.end(), '/', '_');
-    std::string filename = safeTitle + ".mp3";
-    std::string url = "https://www.youtube.com/watch?v=" + videoId;
-    std::string command = "yt-dlp -x --audio-format mp3 -o \"" + filename + "\" \"" + url + "\"";
-    system(command.c_str());
-    if (fs::exists(filename)) return filename;
-    return "";
 }
 
 int main(int argc, char* argv[]) {
@@ -394,7 +350,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    int imgFlags = IMG_INIT_PNG;
+    int imgFlags = IMG_INIT_PNG | IMG_INIT_JPG;
     if (!(IMG_Init(imgFlags) & imgFlags)) {
         std::cerr << "IMG Error: " << IMG_GetError() << std::endl;
         SDL_Quit();
@@ -408,8 +364,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    TTF_Font* font = TTF_OpenFont("arial.ttf", 20);
-    TTF_Font* trackFont = TTF_OpenFont("arial.ttf", 40);
+    TTF_Font* font = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSans.ttf", 20);
+    TTF_Font* trackFont = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSans.ttf", 40);
     if (!font || !trackFont) {
         std::cerr << "Font Error: " << TTF_GetError() << std::endl;
         TTF_Quit();
@@ -418,7 +374,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SDL_Window* window = SDL_CreateWindow("YouTube Music Player", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 750, SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow("Music Player", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 750, SDL_WINDOW_SHOWN);
     if (!window) {
         std::cerr << "Window Error: " << SDL_GetError() << std::endl;
         TTF_CloseFont(font);
@@ -443,6 +399,10 @@ int main(int argc, char* argv[]) {
 
     SDL_Color textColor = {255, 255, 255, 255};
 
+    // Выбор папки (простая имитация, можно заменить на диалог)
+    std::string musicDir = "/home/user/music"; // Замените на вашу папку
+    std::vector<Track> tracks = searchLocalTracks(musicDir);
+
     // Поисковая строка и кнопка "Найти"
     SDL_Rect searchRect {10, 10, 650, 40};
     SDL_Rect findButtonRect {670, 10, 120, 40};
@@ -455,8 +415,6 @@ int main(int argc, char* argv[]) {
     SDL_Rect loadingRect {10, 700, 40, 40};
     int loadingAngle = 0;
 
-    // Треки
-    std::vector<Track> tracks;
     size_t currentTrackIndex = 0;
 
     // Ползунок перемотки
@@ -464,9 +422,15 @@ int main(int argc, char* argv[]) {
     SDL_Rect sliderHandle {300, 495, 10, 20};
     bool isDraggingSlider = false;
 
+    // Ползунок громкости
+    SDL_Rect volumeTrack {500, 500, 200, 10};
+    SDL_Rect volumeHandle {500, 495, 10, 20};
+    bool isDraggingVolume = false;
+    int volume = MIX_MAX_VOLUME; // 0-128
+
     // Ползунок прокрутки
-    SDL_Rect musicScrollTrack {790, 110, 10, 385};
-    SDL_Rect musicScrollHandle {790, 110, 10, 20};
+    SDL_Rect musicScrollTrack {750, 110, 10, 385};
+    SDL_Rect musicScrollHandle {750, 110, 10, 20};
     bool isDraggingMusicScroll = false;
     int musicScrollOffset = 0;
     const int maxVisibleSquares = 7;
@@ -485,6 +449,10 @@ int main(int argc, char* argv[]) {
     SDL_Texture* totalTimeText = nullptr;
     SDL_Texture* hoverTimeText = nullptr;
     double musicDuration = 0.0;
+
+    // Обложка
+    SDL_Texture* coverTexture = nullptr;
+    SDL_Rect coverRect {50, 100, 200, 200};
 
     SDL_Rect cursorRect = {0, 0, 2, 2};
     bool musicStarted = false;
@@ -506,6 +474,8 @@ int main(int argc, char* argv[]) {
         bool MouseOnFindButton = SDL_HasIntersection(&cursorRect, &findButtonRect);
         bool MouseOnSlider = SDL_HasIntersection(&cursorRect, &sliderHandle);
         bool MouseOnSliderTrack = (mx >= sliderTrack.x && mx <= sliderTrack.x + sliderTrack.w && my >= sliderTrack.y && my <= sliderTrack.y + sliderTrack.h);
+        bool MouseOnVolume = SDL_HasIntersection(&cursorRect, &volumeHandle);
+        bool MouseOnVolumeTrack = (mx >= volumeTrack.x && mx <= volumeTrack.x + volumeTrack.w && my >= volumeTrack.y && my <= volumeTrack.y + volumeTrack.h);
         bool MouseOnMusicScroll = SDL_HasIntersection(&cursorRect, &musicScrollHandle);
 
         std::vector<bool> MouseOnMusicSquare(musicSquares.size(), false);
@@ -517,8 +487,37 @@ int main(int argc, char* argv[]) {
             loadingAngle += 10;
             if (loadingAngle >= 360) loadingAngle = 0;
             Uint32 currentTime = SDL_GetTicks();
-            if (currentTime - searchStartTime > 2000) { // Имитация 2 секунд загрузки
+            if (currentTime - searchStartTime > 1000) {
                 isSearching = false;
+                tracks.clear();
+                tracks = searchLocalTracks(musicDir);
+                musicSquares.clear();
+                for (size_t i = 0; i < tracks.size() && i < maxVisibleSquares; ++i) {
+                    musicSquares.push_back({400, static_cast<int>(110 + i * 55), 340, 50});
+                }
+                if (!tracks.empty()) {
+                    currentTrackIndex = 0;
+                    if (trackText) SDL_DestroyTexture(trackText);
+                    trackText = createTextTexture(renderer, trackFont, tracks[0].title, textColor);
+                    needsScrolling = tracks[0].title.length() > 15;
+                    textOffset = 0;
+                    if (tracks[0].music) Mix_FreeMusic(tracks[0].music);
+                    tracks[0].music = Mix_LoadMUS(tracks[0].path.c_str());
+                    if (tracks[0].music) {
+                        musicDuration = Mix_MusicDuration(tracks[0].music);
+                        Mix_VolumeMusic(volume);
+                        if (totalTimeText) SDL_DestroyTexture(totalTimeText);
+                        totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
+                    }
+                    if (coverTexture) SDL_DestroyTexture(coverTexture);
+                    if (!tracks[0].coverPath.empty()) {
+                        SDL_Surface* coverSurface = IMG_Load(tracks[0].coverPath.c_str());
+                        if (coverSurface) {
+                            coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+                            SDL_FreeSurface(coverSurface);
+                        }
+                    }
+                }
             }
         }
 
@@ -544,6 +543,12 @@ int main(int argc, char* argv[]) {
             hoverTimeText = nullptr;
         }
 
+        if (MouseOnVolumeTrack) {
+            float progress = (mx - volumeTrack.x) / static_cast<float>(volumeTrack.w);
+            volume = static_cast<int>(progress * MIX_MAX_VOLUME);
+            Mix_VolumeMusic(volume);
+        }
+
         if (!isDraggingMusicScroll && tracks.size() > maxVisibleSquares) {
             float progress = static_cast<float>(musicScrollOffset) / (tracks.size() - maxVisibleSquares);
             musicScrollHandle.y = musicScrollTrack.y + static_cast<int>(progress * (musicScrollTrack.h - musicScrollHandle.h));
@@ -555,7 +560,7 @@ int main(int argc, char* argv[]) {
                 textOffset++;
                 int textW, textH;
                 SDL_QueryTexture(trackText, nullptr, nullptr, &textW, &textH);
-                if (textOffset >= textW - 300) textOffset = 0;
+                if (textOffset >= textW - 600) textOffset = 0;
                 lastTextUpdate = currentTime;
             }
         } else {
@@ -612,18 +617,21 @@ int main(int argc, char* argv[]) {
         }
 
         // Обложка
-        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
-        SDL_Rect coverRect {300, 100, 200, 200};
-        SDL_RenderFillRect(renderer, &coverRect);
+        if (coverTexture) {
+            SDL_RenderCopy(renderer, coverTexture, nullptr, &coverRect);
+        } else {
+            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+            SDL_RenderFillRect(renderer, &coverRect);
+        }
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderDrawRect(renderer, &coverRect);
 
-        // Текст трека
+        // Название трека посередине
         if (trackText) {
             int textW, textH;
             SDL_QueryTexture(trackText, nullptr, nullptr, &textW, &textH);
-            SDL_Rect textRect = {300 - textOffset, 350, std::min(textW, 300), textH};
-            SDL_Rect clipRect = {300, 350, 300, textH};
+            SDL_Rect textRect = {(800 - textW) / 2 - textOffset, 350, textW, textH};
+            SDL_Rect clipRect = {(800 - 600) / 2, 350, 600, textH};
             SDL_RenderSetClipRect(renderer, &clipRect);
             SDL_RenderCopy(renderer, trackText, nullptr, &textRect);
             SDL_RenderSetClipRect(renderer, nullptr);
@@ -641,6 +649,19 @@ int main(int argc, char* argv[]) {
         SDL_RenderFillRect(renderer, &sliderHandle);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderDrawRect(renderer, &sliderHandle);
+
+        // Ползунок громкости
+        int volumePos = volumeHandle.x - volumeTrack.x;
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+        SDL_Rect darkVolumePart = {volumeTrack.x, volumeTrack.y, volumePos, volumeTrack.h};
+        SDL_RenderFillRect(renderer, &darkVolumePart);
+        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        SDL_Rect lightVolumePart = {volumeTrack.x + volumePos, volumeTrack.y, volumeTrack.w - volumePos, volumeTrack.h};
+        SDL_RenderFillRect(renderer, &lightVolumePart);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderFillRect(renderer, &volumeHandle);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderDrawRect(renderer, &volumeHandle);
 
         // Время
         if (currentTimeText) {
@@ -671,14 +692,14 @@ int main(int argc, char* argv[]) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderDrawRect(renderer, &musicScrollHandle);
 
-        // Квадраты треков
+        // Квадраты треков (справа)
         for (size_t i = 0; i < musicSquares.size(); ++i) {
             SDL_SetRenderDrawColor(renderer, MouseOnMusicSquare[i] ? 170 : 255, MouseOnMusicSquare[i] ? 170 : 0, MouseOnMusicSquare[i] ? 255 : 100, 255);
             SDL_RenderFillRect(renderer, &musicSquares[i]);
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderDrawRect(renderer, &musicSquares[i]);
             if (i + musicScrollOffset < tracks.size()) {
-                SDL_Texture* titleTexture = createTextTexture(renderer, font, tracks[i + musicScrollOffset].title, textColor, 600);
+                SDL_Texture* titleTexture = createTextTexture(renderer, font, tracks[i + musicScrollOffset].title, textColor, 300);
                 if (titleTexture) {
                     int textW, textH;
                     SDL_QueryTexture(titleTexture, nullptr, nullptr, &textW, &textH);
@@ -695,29 +716,6 @@ int main(int argc, char* argv[]) {
                 if (event.key.keysym.sym == SDLK_RETURN && isTyping) {
                     isSearching = true;
                     searchStartTime = SDL_GetTicks();
-                    tracks.clear();
-                    musicSquares.clear();
-                    tracks = fetchYouTubeTracks(searchText);
-                    musicScrollOffset = 0;
-                    for (size_t i = 0; i < tracks.size() && i < maxVisibleSquares; ++i) {
-                        musicSquares.push_back({150, static_cast<int>(110 + i * 55), 640, 50});
-                    }
-                    if (!tracks.empty()) {
-                        currentTrackIndex = 0;
-                        if (trackText) SDL_DestroyTexture(trackText);
-                        trackText = createTextTexture(renderer, trackFont, tracks[0].title.length() > 15 ? tracks[0].title.substr(0, 15) + "..." : tracks[0].title, textColor);
-                        needsScrolling = tracks[0].title.length() > 15;
-                        textOffset = 0;
-                        if (tracks[0].music) Mix_FreeMusic(tracks[0].music);
-                        tracks[0].path = downloadYouTubeTrack(tracks[0].videoId, tracks[0].title);
-                        if (!tracks[0].path.empty()) {
-                            tracks[0].music = Mix_LoadMUS(tracks[0].path.c_str());
-                            musicDuration = Mix_MusicDuration(tracks[0].music);
-                            if (totalTimeText) SDL_DestroyTexture(totalTimeText);
-                            totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
-                        }
-                    }
-                    isTyping = false;
                 } else if (event.key.keysym.sym == SDLK_BACKSPACE && isTyping) {
                     if (!searchText.empty()) searchText.pop_back();
                 } else if (event.key.keysym.sym == SDLK_SPACE && isTyping) {
@@ -728,61 +726,57 @@ int main(int argc, char* argv[]) {
                         searchText += filterText(clipboardText);
                         SDL_free(clipboardText);
                     }
+                } else if (event.key.keysym.sym == SDLK_LEFT && tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music) {
+                    double currentPosition = Mix_GetMusicPosition(tracks[currentTrackIndex].music);
+                    Mix_SetMusicPosition(std::max(0.0, currentPosition - 5.0));
+                } else if (event.key.keysym.sym == SDLK_RIGHT && tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music) {
+                    double currentPosition = Mix_GetMusicPosition(tracks[currentTrackIndex].music);
+                    Mix_SetMusicPosition(std::min(musicDuration, currentPosition + 5.0));
                 }
             } else if (event.type == SDL_TEXTINPUT && isTyping) {
                 searchText += filterText(event.text.text);
-            }
-            else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            } else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
                 if (MouseOnSearch) isTyping = true;
                 else if (MouseOnFindButton) {
                     isSearching = true;
                     searchStartTime = SDL_GetTicks();
-                    tracks.clear();
-                    musicSquares.clear();
-                    tracks = fetchYouTubeTracks(searchText);
-                    musicScrollOffset = 0;
-                    for (size_t i = 0; i < tracks.size() && i < maxVisibleSquares; ++i) {
-                        musicSquares.push_back({150, static_cast<int>(110 + i * 55), 640, 50});
-                    }
-                    if (!tracks.empty()) {
-                        currentTrackIndex = 0;
-                        if (trackText) SDL_DestroyTexture(trackText);
-                        trackText = createTextTexture(renderer, trackFont, tracks[0].title.length() > 15 ? tracks[0].title.substr(0, 15) + "..." : tracks[0].title, textColor);
-                        needsScrolling = tracks[0].title.length() > 15;
-                        textOffset = 0;
-                        if (tracks[0].music) Mix_FreeMusic(tracks[0].music);
-                        tracks[0].path = downloadYouTubeTrack(tracks[0].videoId, tracks[0].title);
-                        if (!tracks[0].path.empty()) {
-                            tracks[0].music = Mix_LoadMUS(tracks[0].path.c_str());
-                            musicDuration = Mix_MusicDuration(tracks[0].music);
-                            if (totalTimeText) SDL_DestroyTexture(totalTimeText);
-                            totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
-                        }
-                    }
                 } else if (MouseOnSlider) isDraggingSlider = true;
+                else if (MouseOnVolume) isDraggingVolume = true;
                 else if (MouseOnMusicScroll) isDraggingMusicScroll = true;
                 else if (MouseOnSliderTrack && tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music) {
                     if (musicDuration > 0) {
                         float progress = (mx - sliderTrack.x) / static_cast<float>(sliderTrack.w);
                         Mix_SetMusicPosition(progress * musicDuration);
                     }
+                } else if (MouseOnVolumeTrack) {
+                    float progress = (mx - volumeTrack.x) / static_cast<float>(volumeTrack.w);
+                    volume = static_cast<int>(progress * MIX_MAX_VOLUME);
+                    Mix_VolumeMusic(volume);
                 } else {
                     for (size_t i = 0; i < musicSquares.size(); ++i) {
                         if (MouseOnMusicSquare[i] && i + musicScrollOffset < tracks.size()) {
                             currentTrackIndex = i + musicScrollOffset;
                             if (musicStarted) Mix_HaltMusic();
                             if (tracks[currentTrackIndex].music) Mix_FreeMusic(tracks[currentTrackIndex].music);
-                            tracks[currentTrackIndex].path = downloadYouTubeTrack(tracks[currentTrackIndex].videoId, tracks[currentTrackIndex].title);
-                            if (!tracks[currentTrackIndex].path.empty()) {
-                                tracks[currentTrackIndex].music = Mix_LoadMUS(tracks[currentTrackIndex].path.c_str());
+                            tracks[currentTrackIndex].music = Mix_LoadMUS(tracks[currentTrackIndex].path.c_str());
+                            if (tracks[currentTrackIndex].music) {
                                 musicDuration = Mix_MusicDuration(tracks[currentTrackIndex].music);
+                                Mix_VolumeMusic(volume);
                                 if (trackText) SDL_DestroyTexture(trackText);
-                                trackText = createTextTexture(renderer, trackFont, tracks[currentTrackIndex].title.length() > 15 ? tracks[currentTrackIndex].title.substr(0, 15) + "..." : tracks[currentTrackIndex].title, textColor);
+                                trackText = createTextTexture(renderer, trackFont, tracks[currentTrackIndex].title, textColor);
                                 needsScrolling = tracks[currentTrackIndex].title.length() > 15;
                                 textOffset = 0;
                                 if (totalTimeText) SDL_DestroyTexture(totalTimeText);
                                 totalTimeText = createTextTexture(renderer, font, formatTime(musicDuration), textColor);
-                                if (!musicStarted && tracks[currentTrackIndex].music) {
+                                if (coverTexture) SDL_DestroyTexture(coverTexture);
+                                if (!tracks[currentTrackIndex].coverPath.empty()) {
+                                    SDL_Surface* coverSurface = IMG_Load(tracks[currentTrackIndex].coverPath.c_str());
+                                    if (coverSurface) {
+                                        coverTexture = SDL_CreateTextureFromSurface(renderer, coverSurface);
+                                        SDL_FreeSurface(coverSurface);
+                                    }
+                                }
+                                if (!musicStarted) {
                                     if (Mix_PlayMusic(tracks[currentTrackIndex].music, -1) == -1) {
                                         std::cerr << "Play Error: " << Mix_GetError() << std::endl;
                                     } else {
@@ -794,8 +788,7 @@ int main(int argc, char* argv[]) {
                         }
                     }
                 }
-            }
-            else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
+            } else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
                 if (isDraggingSlider) {
                     isDraggingSlider = false;
                     if (tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music && musicStarted) {
@@ -804,12 +797,19 @@ int main(int argc, char* argv[]) {
                             Mix_SetMusicPosition(progress * musicDuration);
                         }
                     }
+                } else if (isDraggingVolume) {
+                    isDraggingVolume = false;
                 } else if (isDraggingMusicScroll) isDraggingMusicScroll = false;
-            }
-            else if (event.type == SDL_MOUSEMOTION) {
+            } else if (event.type == SDL_MOUSEMOTION) {
                 if (isDraggingSlider) {
                     int newX = mx - sliderHandle.w / 2;
                     sliderHandle.x = std::max(sliderTrack.x, std::min(newX, sliderTrack.x + sliderTrack.w - sliderHandle.w));
+                } else if (isDraggingVolume) {
+                    int newX = mx - volumeHandle.w / 2;
+                    volumeHandle.x = std::max(volumeTrack.x, std::min(newX, volumeTrack.x + volumeTrack.w - volumeHandle.w));
+                    float progress = (volumeHandle.x - volumeTrack.x) / static_cast<float>(volumeTrack.w - volumeHandle.w);
+                    volume = static_cast<int>(progress * MIX_MAX_VOLUME);
+                    Mix_VolumeMusic(volume);
                 } else if (isDraggingMusicScroll && tracks.size() > maxVisibleSquares) {
                     int newY = my - musicScrollHandle.h / 2;
                     musicScrollHandle.y = std::max(musicScrollTrack.y, std::min(newY, musicScrollTrack.y + musicScrollTrack.h - musicScrollHandle.h));
@@ -817,11 +817,10 @@ int main(int argc, char* argv[]) {
                     musicScrollOffset = static_cast<int>(progress * (tracks.size() - maxVisibleSquares));
                     musicSquares.clear();
                     for (size_t i = musicScrollOffset; i < tracks.size() && i < musicScrollOffset + maxVisibleSquares; ++i) {
-                        musicSquares.push_back({150, static_cast<int>(110 + (i - musicScrollOffset) * 55), 640, 50});
+                        musicSquares.push_back({400, static_cast<int>(110 + (i - musicScrollOffset) * 55), 340, 50});
                     }
                 }
-            }
-            else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE) {
+            } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE) {
                 if (tracks.size() > currentTrackIndex && tracks[currentTrackIndex].music) {
                     if (Mix_PausedMusic()) Mix_ResumeMusic();
                     else Mix_PauseMusic();
@@ -835,12 +834,12 @@ int main(int argc, char* argv[]) {
 
     for (auto& track : tracks) {
         if (track.music) Mix_FreeMusic(track.music);
-        if (!track.path.empty()) fs::remove(track.path);
     }
     if (trackText) SDL_DestroyTexture(trackText);
     if (currentTimeText) SDL_DestroyTexture(currentTimeText);
     if (totalTimeText) SDL_DestroyTexture(totalTimeText);
     if (hoverTimeText) SDL_DestroyTexture(hoverTimeText);
+    if (coverTexture) SDL_DestroyTexture(coverTexture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     TTF_CloseFont(font);
