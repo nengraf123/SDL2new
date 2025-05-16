@@ -4,5 +4,5 @@
 # 	./bin/app
 all:
 	g++ src/main.cpp src/tinyfiledialogs.c -o bin/app \
-		-lSDL2 -lSDL2_image -lSDL2_mixer
+		-lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
 	./bin/app
