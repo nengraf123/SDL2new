@@ -8,6 +8,7 @@
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_image.h>
 
+#include "tinyfiledialogs.h"
 
 
 int main(int argc, char* argv[]) {
@@ -156,6 +157,8 @@ int main(int argc, char* argv[]) {
             SDL_RenderFillRect(renderer, &knopka1);
             /* Черная обводка вокруг кнопки */
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderDrawRect(renderer, &knopka1);
+            /* Ставим текстуру на кнопку */
+            SDL_RenderCopy(renderer, btnTexture, nullptr, &knopka1);
 
 
             /* Рисуем кнопку 2: цвет зависит от наведения */
@@ -223,24 +226,44 @@ int main(int argc, char* argv[]) {
 
         while (SDL_PollEvent(&event)) {if (event.type == SDL_QUIT) {running = false;}
 
-        /* Наши бинды кнопочек на клавиатуре */
-        if (event.type == SDL_KEYDOWN) // нужна для клавиатуры
-        {
-            /* При нажатии 1 цифры начинает играть музыка */
-            if (event.key.keysym.sym == SDLK_1) {if(!musicStarted){if(Mix_PlayMusic(bgm, -1) == -1) {std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;}
-                else {musicStarted = true;}}}
-            // для паузы/продолжения можно, например, Space:
-            if (event.key.keysym.sym == SDLK_SPACE) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();}
+            /* Наши бинды кнопочек на клавиатуре */
+            if (event.type == SDL_KEYDOWN) // нужна для клавиатуры
+            {
+                /* При нажатии 1 цифры начинает играть музыка */
+                if (event.key.keysym.sym == SDLK_1) {if(!musicStarted){if(Mix_PlayMusic(bgm, -1) == -1) {std::cerr << "Mix_PlayMusic error: " << Mix_GetError() << std::endl;}
+                    else {musicStarted = true;}}}
+                // для паузы/продолжения можно, например, Space:
+                if (event.key.keysym.sym == SDLK_SPACE) {if (Mix_PausedMusic()) Mix_ResumeMusic();else Mix_PauseMusic();}
 
-        }  
-        /* Бинды кнопочек для мышки */
-        if (scene==0 && MouseOnKnopka1 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {scene =1;}
-        if (scene==0 && MouseOnKnopka10 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {scene =0;}
+            }  
+            /* Бинды кнопочек для мышки */
+            if (scene==0 && MouseOnKnopka1 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {scene =1;}
+            if (scene==0 && MouseOnKnopka10 && event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {scene =0;}
 
+            // По нажатию клавиши (скажем, 'O') открываем диалог:
+            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_o) {
+                // Фильтр по аудио-файлам
+                const char *filters[] = { "*.mp3", "*.wav", "*.ogg" };
+                const char *file = tinyfd_openFileDialog(
+                    "Выберите аудиофайл", // заголовок
+                    NULL,                 // начальная папка (NULL = текущая)
+                    3,                    // число фильтров
+                    filters,              // список фильтров
+                    NULL,                 // description (можно NULL)
+                    0                     // разрешить множественный выбор? 0 = нет
+                );
+                if (file) {
+                    // Загружаем новую музыку
+                    Mix_FreeMusic(bgm);
+                    bgm = Mix_LoadMUS(file);
+                    if (!bgm) {
+                        std::cerr << "Ошибка загрузки: " << Mix_GetError() << std::endl;
+                    }
+                }
+            }
 
         }
 
-SDL_RenderCopy(renderer, btnTexture, nullptr, &knopka1);
 
 
         SDL_RenderPresent(renderer);SDL_Delay(16); /* ~60 FPS */}
