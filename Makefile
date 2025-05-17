@@ -1,74 +1,73 @@
-# all:
-# 	# g++ src/main.cpp -o bin/app $(pkg-config --cflags --libs sdl2)
-# 	g++ src/main.cpp -o bin/app -lSDL2 -lSDL2_image -lSDL2_mixer #-lSDL2_image -lSDL2_ttf 
-# 	./bin/app
-# g++ -std=c++17 src/main.cpp -o bin/app -lSDL2 -lSDL2_mixer -lSDL2_image -lSDL2_ttf 
-# g++ -std=c++17 src/main.cpp -o bin/app -lSDL2 -lSDL2_mixer -lSDL2_image -lSDL2_ttf 
-# g++ src/main.cpp src/tinyfiledialogs.c -o bin/app \
-# 	-lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
-#
-#
-#
-# all:
-# 	g++ src/main.cpp src/tinyfiledialogs.c -o bin/app -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
-# 	./bin/app
+# Папки
+SRC_DIR := src
+OBJ_DIR := src/file_o
+BIN_DIR := bin
+LIB_DIR := src/biblioteki
 
-# Компилятор
-CC = g++
+# Файлы
+SOURCES := $(SRC_DIR)/main.cpp \
+           $(SRC_DIR)/common/common.cpp \
+           $(SRC_DIR)/musicPlayer/musicPlayer.cpp \
+           $(SRC_DIR)/towerDefens/towerDefens.cpp \
+           $(LIB_DIR)/tinyfiledialogs.c
+OBJECTS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(filter %.cpp,$(SOURCES))) \
+          $(patsubst $(LIB_DIR)/%.c,$(OBJ_DIR)/%.o,$(filter %.c,$(SOURCES)))
+EXECUTABLE := $(BIN_DIR)/app
 
-# Флаги компиляции
-CFLAGS = -Wall -g
+# Компилятор и флаги
+CC := g++
+CFLAGS := -I$(LIB_DIR)/SDL2 -I$(LIB_DIR)
+LDFLAGS := -L$(LIB_DIR)/SDL2 -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer
+CXXFLAGS := -std=c++17 -Wall
 
-# Флаги для SDL2 библиотек
-SDL_CFLAGS = $(shell sdl2-config --cflags)
-SDL_LDFLAGS = $(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf -lSDL2_mixer
+# Цели
+all: $(EXECUTABLE)
 
-# Директории
-SRC_DIR = src
-BIN_DIR = bin
-COMMON_DIR = $(SRC_DIR)/common
-MUSICPLAYER_DIR = $(SRC_DIR)/musicPlayer
-TOWERDEFENS_DIR = $(SRC_DIR)/towerDefens
+$(EXECUTABLE): $(OBJECTS) | $(BIN_DIR)
+	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 
-# Исходные файлы
-SOURCES = $(SRC_DIR)/main.cpp \
-          $(COMMON_DIR)/common.cpp \
-          $(MUSICPLAYER_DIR)/musicPlayer.cpp \
-          $(TOWERDEFENS_DIR)/towerDefens.cpp
+# Правило для .cpp файлов в корне src
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(CXXFLAGS) -c $< -o $@
 
-# Объектные файлы
-OBJECTS = $(SOURCES:.cpp=.o)
+# Правило для .cpp файлов в src/common
+$(OBJ_DIR)/common/%.o: $(SRC_DIR)/common/%.cpp | $(OBJ_DIR)/common
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(CXXFLAGS) -c $< -o $@
 
-# Имя исполняемого файла
-EXEC = $(BIN_DIR)/app
+# Правило для .cpp файлов в src/musicPlayer
+$(OBJ_DIR)/musicPlayer/%.o: $(SRC_DIR)/musicPlayer/%.cpp | $(OBJ_DIR)/musicPlayer
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(CXXFLAGS) -c $< -o $@
 
-# Правило по умолчанию
-all: $(EXEC)
+# Правило для .cpp файлов в src/towerDefens
+$(OBJ_DIR)/towerDefens/%.o: $(SRC_DIR)/towerDefens/%.cpp | $(OBJ_DIR)/towerDefens
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(CXXFLAGS) -c $< -o $@
 
-# Создание исполняемого файла
-$(EXEC): $(OBJECTS)
-	@mkdir -p $(BIN_DIR)
-	$(CC) $(OBJECTS) -o $@ $(SDL_LDFLAGS)
+# Правило для .c файлов в src/biblioteki
+$(OBJ_DIR)/%.o: $(LIB_DIR)/%.c | $(OBJ_DIR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Компиляция исходных файлов
-$(SRC_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
+# Создание директорий
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
 
-$(COMMON_DIR)/%.o: $(COMMON_DIR)/%.cpp
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
 
-$(MUSICPLAYER_DIR)/%.o: $(MUSICPLAYER_DIR)/%.cpp
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
+$(OBJ_DIR)/common:
+	mkdir -p $(OBJ_DIR)/common
 
-$(TOWERDEFENS_DIR)/%.o: $(TOWERDEFENS_DIR)/%.cpp
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
+$(OBJ_DIR)/musicPlayer:
+	mkdir -p $(OBJ_DIR)/musicPlayer
 
-# Очистка
+$(OBJ_DIR)/towerDefens:
+	mkdir -p $(OBJ_DIR)/towerDefens
+
 clean:
-	rm -f $(OBJECTS) $(EXEC)
+	rm -rf $(OBJ_DIR) $(BIN_DIR)/app
 
-# Полная очистка
-distclean: clean
-	rm -rf $(BIN_DIR)
-
-.PHONY: all clean distclean
+.PHONY: all clean
