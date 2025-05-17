@@ -1,5 +1,7 @@
 #include "common/common.h"
+#include "mainMenu/mainMenu.h"
 #include "musicPlayer/musicPlayer.h"
+#include "settings/settings.h"
 #include "towerDefens/towerDefens.h"
 #include <filesystem>
 #include <fstream>
@@ -66,9 +68,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    TTF_Font* trackFont = TTF_OpenFont("font/arial.ttf", 36);
-    if (!trackFont) {
-        cerr << "Ошибка загрузки шрифта для трека: " << TTF_GetError() << endl;
+    TTF_Font* titleFont = TTF_OpenFont("font/arial.ttf", 48);
+    if (!titleFont) {
+        cerr << "Ошибка загрузки шрифта заголовка: " << TTF_GetError() << endl;
         TTF_CloseFont(font);
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
@@ -88,13 +90,19 @@ int main(int argc, char* argv[]) {
         inFile.close();
     }
 
+    MainMenu mainMenu;
+    mainMenu.init(renderer, titleFont);
+
     MusicPlayer musicPlayer;
     musicPlayer.init(musicPath, folderPath);
+
+    Settings settings;
+    settings.init(renderer, font);
 
     TowerDefens towerDefens;
     towerDefens.init();
 
-    int scene = 0;
+    int scene = -1; // Начать с главного меню
     bool running = true;
     SDL_Event event;
     int mx = 0, my = 0;
@@ -107,31 +115,43 @@ int main(int argc, char* argv[]) {
                 mx = event.motion.x;
                 my = event.motion.y;
             } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
-                running = false;
+                if (scene == -1) {
+                    running = false;
+                } else {
+                    scene = -1; // Вернуться в главное меню
+                }
             }
-            if (scene == 0) {
-                musicPlayer.handleEvents(event, renderer, font, trackFont, mx, my, running);
+            if (scene == -1) {
+                mainMenu.handleEvents(event, scene, running, mx, my);
+            } else if (scene == 0) {
+                musicPlayer.handleEvents(event, renderer, font, titleFont, mx, my, running, scene);
             } else if (scene == 1) {
                 towerDefens.handleEvents(event, mx, my, scene);
+            } else if (scene == 2) {
+                settings.handleEvents(event, scene, mx, my);
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255); // Тёмный фон
         SDL_RenderClear(renderer);
 
-        if (scene == 0) {
+        if (scene == -1) {
+            mainMenu.render(renderer, titleFont, mx, my);
+        } else if (scene == 0) {
             musicPlayer.update(renderer, font);
             musicPlayer.render(renderer, font, mx, my);
         } else if (scene == 1) {
             towerDefens.update(renderer, font);
             towerDefens.render(renderer, font, mx, my);
+        } else if (scene == 2) {
+            settings.render(renderer, font, mx, my);
         }
 
         SDL_RenderPresent(renderer);
     }
 
     TTF_CloseFont(font);
-    TTF_CloseFont(trackFont);
+    TTF_CloseFont(titleFont);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     Mix_CloseAudio();

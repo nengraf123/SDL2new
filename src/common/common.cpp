@@ -19,7 +19,7 @@ SDL_Texture* createTextTexture(SDL_Renderer* renderer, TTF_Font* font, const std
 std::string formatTime(double seconds) {
     int minutes = static_cast<int>(seconds) / 60;
     int secs = static_cast<int>(seconds) % 60;
-    char buffer[6];
+    char buffer[16];
     snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, secs);
     return std::string(buffer);
 }
