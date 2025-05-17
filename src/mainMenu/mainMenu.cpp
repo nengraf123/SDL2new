@@ -78,7 +78,7 @@ void MainMenu::render(SDL_Renderer* renderer, TTF_Font* font, int mx, int my) {
     SDL_RenderDrawRect(renderer, &scaledExitButton);
 
     // Рендеринг текста кнопок
-    SDL_Texture* playerText = createTextTexture(renderer, font, "Музыкальный плеер", textColor, 180);
+    SDL_Texture* playerText = createTextTexture(renderer, font, "Музыкальный плеер", textColor, 150);
     if (playerText) {
         int tw, th;
         SDL_QueryTexture(playerText, nullptr, nullptr, &tw, &th);
@@ -93,7 +93,7 @@ void MainMenu::render(SDL_Renderer* renderer, TTF_Font* font, int mx, int my) {
         SDL_DestroyTexture(playerText);
     }
 
-    SDL_Texture* gameText = createTextTexture(renderer, font, "Tower Defense", textColor, 180);
+    SDL_Texture* gameText = createTextTexture(renderer, font, "Tower Defense", textColor, 150);
     if (gameText) {
         int tw, th;
         SDL_QueryTexture(gameText, nullptr, nullptr, &tw, &th);
@@ -108,7 +108,7 @@ void MainMenu::render(SDL_Renderer* renderer, TTF_Font* font, int mx, int my) {
         SDL_DestroyTexture(gameText);
     }
 
-    SDL_Texture* settingsText = createTextTexture(renderer, font, "Настройки", textColor, 180);
+    SDL_Texture* settingsText = createTextTexture(renderer, font, "Настройки", textColor, 150);
     if (settingsText) {
         int tw, th;
         SDL_QueryTexture(settingsText, nullptr, nullptr, &tw, &th);
@@ -123,7 +123,7 @@ void MainMenu::render(SDL_Renderer* renderer, TTF_Font* font, int mx, int my) {
         SDL_DestroyTexture(settingsText);
     }
 
-    SDL_Texture* exitText = createTextTexture(renderer, font, "Выход", textColor, 180);
+    SDL_Texture* exitText = createTextTexture(renderer, font, "Выход", textColor, 150);
     if (exitText) {
         int tw, th;
         SDL_QueryTexture(exitText, nullptr, nullptr, &tw, &th);

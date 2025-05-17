@@ -11,7 +11,7 @@ TowerDefens::TowerDefens() : lastEnemySpawn(0), enemySpawnInterval(2000), player
     towerColor({100, 100, 200, 255}), projectileColor({255, 200, 100, 255}),
     buttonColor({40, 40, 60, 255}), buttonHoverColor({60, 60, 90, 255}),
     borderColor({100, 100, 100, 255}), validPlacementColor({100, 200, 100, 150}),
-    invalidPlacementColor({200, 100, 100, 150}) {
+    invalidPlacementColor({200, 100, 100, 150}), hoveredTower(-1) {
     enemySpeeds[0] = 2.0f; enemySpeeds[1] = 1.5f; enemySpeeds[2] = 0.8f; enemySpeeds[3] = 3.0f;
     enemySpeeds[4] = 1.0f; enemySpeeds[5] = 2.5f; enemySpeeds[6] = 0.5f; enemySpeeds[7] = 1.8f;
     enemySpeeds[8] = 2.2f; enemySpeeds[9] = 1.2f;
@@ -91,6 +91,13 @@ void TowerDefens::handleEvents(SDL_Event& event, int mx, int my, int& scene) {
         if (isPlacingTower) {
             previewTower.x = mx - 25;
             previewTower.y = my - 25;
+        }
+        hoveredTower = -1;
+        for (size_t i = 0; i < towers.size(); ++i) {
+            if (towers[i].active && isMouseOnButton(mx, my, {towers[i].x, towers[i].y, 50, 50})) {
+                hoveredTower = i;
+                break;
+            }
         }
     }
 }
@@ -187,10 +194,11 @@ void TowerDefens::render(SDL_Renderer* renderer, TTF_Font* font, int mx, int my)
             SDL_RenderCopy(renderer, enemyTexture, nullptr, &enemyRect);
         } else {
             SDL_SetRenderDrawColor(renderer, enemyColor.r, enemyColor.g, enemyColor.b, enemyColor.a);
-            renderCircle(renderer, static_cast<int>(enemy.x), static_cast<int>(enemy.y), 15);
+            renderCircleOutline(renderer, static_cast<int>(enemy.x), static_cast<int>(enemy.y), 15);
         }
     }
-    for (const auto& tower : towers) {
+    for (size_t i = 0; i < towers.size(); ++i) {
+        const auto& tower = towers[i];
         if (!tower.active) continue;
         if (towerTexture) {
             SDL_Rect towerRect = {tower.x, tower.y, 50, 50};
@@ -200,13 +208,15 @@ void TowerDefens::render(SDL_Renderer* renderer, TTF_Font* font, int mx, int my)
             SDL_Rect towerRect = {tower.x, tower.y, 50, 50};
             SDL_RenderFillRect(renderer, &towerRect);
         }
-        SDL_SetRenderDrawColor(renderer, towerColor.r, towerColor.g, towerColor.b, 100);
-        renderCircle(renderer, tower.x + 25, tower.y + 25, tower.range);
+        if (static_cast<int>(i) == hoveredTower) {
+            SDL_SetRenderDrawColor(renderer, towerColor.r, towerColor.g, towerColor.b, 100);
+            renderCircleOutline(renderer, tower.x + 25, tower.y + 25, tower.range);
+        }
     }
     for (const auto& projectile : projectiles) {
         if (!projectile.active) continue;
         SDL_SetRenderDrawColor(renderer, projectileColor.r, projectileColor.g, projectileColor.b, projectileColor.a);
-        renderCircle(renderer, static_cast<int>(projectile.x), static_cast<int>(projectile.y), 5);
+        renderCircleOutline(renderer, static_cast<int>(projectile.x), static_cast<int>(projectile.y), 5);
     }
     for (int i = 0; i < TOWER_TYPES; ++i) {
         SDL_SetRenderDrawColor(renderer, mouseOnCard[i] ? buttonHoverColor.r : buttonColor.r,
@@ -242,7 +252,7 @@ void TowerDefens::render(SDL_Renderer* renderer, TTF_Font* font, int mx, int my)
         SDL_SetRenderDrawColor(renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
         SDL_RenderDrawRect(renderer, &previewTower);
         SDL_SetRenderDrawColor(renderer, towerColor.r, towerColor.g, towerColor.b, 100);
-        renderCircle(renderer, previewTower.x + 25, previewTower.y + 25, towerRanges[selectedTowerType]);
+        renderCircleOutline(renderer, previewTower.x + 25, previewTower.y + 25, towerRanges[selectedTowerType]);
     }
     if (healthText) {
         int tw, th;
@@ -324,14 +334,15 @@ bool TowerDefens::isValidPlacement(int x, int y, const std::vector<Tower>& tower
     return x >= 0 && y >= 0 && x + towerSize <= 800 && y + towerSize <= 800;
 }
 
-void TowerDefens::renderCircle(SDL_Renderer* renderer, int centerX, int centerY, int radius) {
-    for (int w = 0; w < radius * 2; ++w) {
-        for (int h = 0; h < radius * 2; ++h) {
-            int dx = radius - w;
-            int dy = radius - h;
-            if ((dx * dx + dy * dy) <= (radius * radius)) {
-                SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
-            }
-        }
+void TowerDefens::renderCircleOutline(SDL_Renderer* renderer, int centerX, int centerY, int radius) {
+    const float PI = 3.1415926535f;
+    int prevX = centerX + radius;
+    int prevY = centerY;
+    for (float angle = 0; angle <= 2 * PI; angle += 0.1f) {
+        int x = centerX + static_cast<int>(radius * cos(angle));
+        int y = centerY + static_cast<int>(radius * sin(angle));
+        SDL_RenderDrawLine(renderer, prevX, prevY, x, y);
+        prevX = x;
+        prevY = y;
     }
 }

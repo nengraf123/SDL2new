@@ -74,10 +74,10 @@ private:
     SDL_Color borderColor;
     SDL_Color validPlacementColor;
     SDL_Color invalidPlacementColor;
+    int hoveredTower; // Индекс башни, на которую наведена мышь
     bool isMouseOnButton(int mx, int my, const SDL_Rect& button);
     bool inRange(Tower& tower, float px, float py);
     bool isValidPlacement(int x, int y, const std::vector<Tower>& towers, int towerSize = 50);
-    void renderCircle(SDL_Renderer* renderer, int centerX, int centerY, int radius);
+    void renderCircleOutline(SDL_Renderer* renderer, int centerX, int centerY, int radius);
 };
-
 #endif
