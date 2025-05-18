@@ -536,9 +536,11 @@ int main(int argc, char* argv[]) { // Было (int argc, char* args[])
 
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
-            if (e.type == SDL_QUIT) {
-                quit = true;
-            } else if (e.type == SDL_MOUSEMOTION) {
+            if (e.type == SDL_QUIT) {quit = true;}
+            if (e.type == SDL_KEYDOWN) {
+            if (e.key.keysym.sym == SDLK_ESCAPE) {quit = true;}
+            }
+            else if (e.type == SDL_MOUSEMOTION) {
                 int x, y;
                 SDL_GetMouseState(&x, &y);
                 for (auto& btn : buttons) {
