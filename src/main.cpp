@@ -5,7 +5,7 @@
 
 
 // Функция для проверки, находится ли точка (x, y) внутри прямоугольника (rect)
-// Это наша реализация. В SDL есть готовая SDL_PointInRect, но эта понятнее.
+// Это моя нахуй реализация В SDL есть готовая SDL_PointInRect, но эта понятнее.
 bool IsPointInRect(int x, int y, const SDL_Rect* rect) {
     if (rect == nullptr) return false; // Проверка на нулевой указатель в C++ стиле
     return (x >= rect->x && x < rect->x + rect->w &&
