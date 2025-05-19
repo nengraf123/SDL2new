@@ -10,7 +10,7 @@
 
 
 
-        if (event.type == SDL_QUIT) {running = false;}
+    if (event.type == SDL_QUIT) {running = false;}
         /* Если нажата клавиша на клавиатуре то */
         if (event.type == SDL_KEYDOWN) {
             if (event.key.keysym.sym == SDLK_ESCAPE) {running = false;}
