@@ -1,3 +1,4 @@
+#include <SDL2/SDL_rect.h>
 #include <iostream>
 #include <stdio.h>
 #include <cmath> 
@@ -31,13 +32,29 @@ int main(int argc, char* argv[]) {
     #include "h/error2.h"
 
 
-    SDL_Rect square_rect = { 100, 100, 100, 100 }; // x, y, ширина, высота
+    SDL_Rect knopka1 = { 0, 0, 0, 0,};
+    SDL_Rect knopka2 = { 0, 0, 0, 0,};
+    SDL_Rect knopka3 = { 0, 0, 0, 0,};
+    SDL_Rect knopka4 = { 0, 0, 0, 0,};
+    SDL_Rect knopka5 = { 0, 0, 0, 0,};
+    SDL_Rect knopka6 = { 0, 0, 0, 0,};
+    SDL_Rect knopka7 = { 0, 0, 0, 0,};
+    SDL_Rect knopka8 = { 0, 0, 0, 0,};
+    SDL_Rect knopka9 = { 0, 0, 0, 0,};
+    SDL_Rect knopka10 = { 0, 0, 0, 0,};
+    SDL_Rect knopka11 = { 0, 0, 0, 0,};
+    SDL_Rect knopka12 = { 0, 0, 0, 0,};
+    SDL_Rect knopka13 = { 0, 0, 0, 0,};
+    SDL_Rect knopka14 = { 0, 0, 0, 0,};
+    SDL_Rect knopka15 = { 0, 0, 0, 0,};
+
+
+    SDL_Rect square_rect = { 750, 0, 50, 50 };
     bool is_square_present = true;   // Флаг: должен ли квадрат быть нарисован
     bool is_square_hovered = false;  // Флаг: находится ли мышь над квадратом
 
     SDL_Color color_default = { 0, 0, 255, 255 }; // Синий (R, G, B, A)
     SDL_Color color_hovered = { 255, 255, 0, 255 }; // Желтый
-    SDL_Color color_background = { 0, 0, 0, 255 }; // Черный фон
 
 
 
