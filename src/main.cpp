@@ -1,4 +1,5 @@
 #include <SDL2/SDL_rect.h>
+#include <SDL2/SDL_render.h>
 #include <iostream>
 #include <stdio.h>
 #include <cmath> 
@@ -32,7 +33,7 @@ int main(int argc, char* argv[]) {
     #include "h/error2.h"
 
 
-    SDL_Rect knopka1 = { 0, 0, 0, 0,};
+    SDL_Rect knopka1 = { 0, 0, 100, 50,};
     SDL_Rect knopka2 = { 0, 0, 0, 0,};
     SDL_Rect knopka3 = { 0, 0, 0, 0,};
     SDL_Rect knopka4 = { 0, 0, 0, 0,};
@@ -56,7 +57,7 @@ int main(int argc, char* argv[]) {
     SDL_Color color_default = { 0, 0, 255, 255 }; // Синий (R, G, B, A)
     SDL_Color color_hovered = { 255, 255, 0, 255 }; // Желтый
 
-
+int H = 0;
 
     // Основной цикл
     bool running = true;
@@ -79,11 +80,21 @@ int main(int argc, char* argv[]) {
             SDL_RenderFillRect(renderer, &square_rect);
         }
 
-
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);//SDL_RenderFillRect(renderer, &knopka1);
 
         // Обработка событий
     while (SDL_PollEvent(&event)) {
         #include "h/event.h"
+
+
+        // if (event.type == SDL_MOUSEBUTTONDOWN) {
+            if (IsPointInRect(event.motion.x, event.motion.y, &knopka1)) 
+            {SDL_RenderFillRect(renderer, &knopka1);
+            std::cout << H + 1 << "\n";
+            }
+        
+        // }
+
     }
     // Обновление экрана
     SDL_RenderPresent(renderer);
