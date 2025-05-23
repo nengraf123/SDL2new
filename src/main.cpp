@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 
     // Создание окна
     SDL_Window* window = SDL_CreateWindow(
-        "SDL2 Пример",                  // Заголовок окна
+        "ПИСЮНЧИК!",                  // Заголовок окна
         SDL_WINDOWPOS_CENTERED,         // Позиция X
         SDL_WINDOWPOS_CENTERED,         // Позиция Y
         800,                            // Ширина
