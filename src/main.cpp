@@ -50,54 +50,28 @@ int main(int argc, char* argv[]) {
     SDL_Rect knopka15 = { 0, 0, 0, 0,};
 
 
-    SDL_Rect square_rect = { 750, 0, 50, 50 };
-    bool is_square_present = true;   // Флаг: должен ли квадрат быть нарисован
-    bool is_square_hovered = false;  // Флаг: находится ли мышь над квадратом
-
-    SDL_Color color_default = { 0, 0, 255, 255 }; // Синий (R, G, B, A)
-    SDL_Color color_hovered = { 255, 255, 0, 255 }; // Желтый
-
-int H = 0;
 
     // Основной цикл
     bool running = true;
     SDL_Event event;
     while (running) {
 
-        // Очистка экрана (черный цвет)
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);SDL_RenderClear(renderer);
+        // Очистка экрана 
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);SDL_RenderClear(renderer);
 
 
 
 
-        // Отрисовка квадрата, если он существует
-        if (is_square_present) {
-            // Выбираем цвет в зависимости от состояния наведения
-            if (is_square_hovered) {SDL_SetRenderDrawColor(renderer, color_hovered.r, color_hovered.g, color_hovered.b, color_hovered.a);}
-            else {SDL_SetRenderDrawColor(renderer, color_default.r, color_default.g, color_default.b, color_default.a);}
-
-            // Рисуем заполненный прямоугольник (наш квадрат)
-            SDL_RenderFillRect(renderer, &square_rect);
-        }
-
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);//SDL_RenderFillRect(renderer, &knopka1);
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);SDL_RenderFillRect(renderer, &knopka1);
 
         // Обработка событий
     while (SDL_PollEvent(&event)) {
-        #include "h/event.h"
-
-
-        // if (event.type == SDL_MOUSEBUTTONDOWN) {
-            if (IsPointInRect(event.motion.x, event.motion.y, &knopka1)) 
-            {SDL_RenderFillRect(renderer, &knopka1);
-            std::cout << H + 1 << "\n";
-            }
-        
-        // }
 
     }
     // Обновление экрана
     SDL_RenderPresent(renderer);
+    SDL_Delay(16); // ~60 FPS
+
     }
 
     // Очистка ресурсов
